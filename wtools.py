@@ -2,128 +2,7 @@
 import bpy
 from . import btools
 from .bscene_w import BlenderSceneW
-
-
-def set_up_rlayer_super(scene_instance, rlname, visible_layers=None, include_layers=None,
-                        mask_layers=None, rlname_other=None):
-    """Sets up one or two render layers, a wrapper of the 'set_up_rlayer' function.
-
-    The difference is that this one is specific for this add-on.
-
-    Args:
-        scene_instance: An instance of the class BlenderSceneW.
-        rlname: A string representing the name of the render layer you want to set up.
-        visible_layers: An optional list consisting of integers representing the layers you want to be visible
-            -i.e. all layers you want to render, which also will be visible in the viewport-in the new render layer.
-        include_layers: An optional list consisting of integers representing the layers
-            you want to be included in the new render layer (specific for this render layer).
-        mask_layers: An optional list consisting of integers representing the layers
-            you want to be masked in the new render layer (specific for this render layer).
-        rlname_other: An optional string representing the name of the second render layer, which is needed if the
-            wireframe type is 'Freestyle' and the 'Composited Wires' checkbox is checked.
-    """
-    scene = scene_instance.set_as_active()
-    layer_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-
-    if visible_layers is None:
-        visible_layers = BlenderSceneW.all_layers_used_numbers
-
-    if include_layers is None:
-        include_layers = BlenderSceneW.all_layers_used_numbers
-
-    if BlenderSceneW.original_scene.CheckboxClearRLayers:
-        for layer in scene.render.layers[0:len(scene.render.layers)-1]:
-            scene.render.layers.remove(layer)
-
-        scene.render.layers.active.name = rlname
-        scene.render.layers.active.use = True
-
-        new_rlayer = scene.render.layers.active
-
-    # not clearing render layers --> creates new one
-    else:
-        for rlayer in scene.render.layers:
-            rlayer.use = False
-
-        new_rlayer = scene.render.layers.new(rlname)
-        scene.render.layers.active = new_rlayer
-
-    if BlenderSceneW.rlname is None:
-        BlenderSceneW.rlname = new_rlayer.name
-
-    # only used for blender internal wireframe, two scenes --> two render layer names
-    else:
-        BlenderSceneW.rlname_2 = new_rlayer.name
-
-    # there needs to be two render layers for freestyle compositing
-    if (BlenderSceneW.original_scene.CheckboxComp
-            and BlenderSceneW.original_scene.WireframeType == 'WIREFRAME_FREESTYLE'):
-        new_rlayer = scene.render.layers.new(rlname_other)
-        BlenderSceneW.rlname_other = new_rlayer.name
-
-    if BlenderSceneW.original_scene.CheckboxUseAO:
-        scene.render.layers[rlname].use_pass_ambient_occlusion = True
-
-        if (BlenderSceneW.original_scene.CheckboxComp
-                and BlenderSceneW.original_scene.WireframeType == 'WIREFRAME_FREESTYLE'):
-            scene.render.layers[BlenderSceneW.rlname_other].use_pass_ambient_occlusion = True
-
-    for i in layer_numbers:
-        if (BlenderSceneW.original_scene.CheckboxComp
-                and BlenderSceneW.original_scene.WireframeType == 'WIREFRAME_FREESTYLE'):
-            if BlenderSceneW.other_layers_numbers is not None:
-                if i in BlenderSceneW.other_layers_numbers:
-                    scene.render.layers[rlname_other].layers[i] = True
-
-                else:
-                    scene.render.layers[rlname_other].layers[i] = False
-
-            if BlenderSceneW.affected_layers_numbers is not None:
-                if i in BlenderSceneW.affected_layers_numbers:
-                    scene.render.layers[rlname_other].layers_zmask[i] = True
-                    scene.render.layers[rlname].layers[i] = True
-
-                else:
-                    scene.render.layers[rlname_other].layers_zmask[i] = False
-                    scene.render.layers[rlname].layers[i] = False
-
-    BlenderSceneW.set_up_rlayer(scene_instance, False, rlname, visible_layers, include_layers, mask_layers)
-
-
-def select_super(scene_instance, mode, types, exclude_types=None, layers=None, exclude_layers=None, objects=None):
-    """Selects or deselects objects, a wrapper of the 'select' and 'deselect' functions.
-
-    The difference is that this one is specific for this add-on.
-
-    Args:
-        scene_instance: An instance of the class BlenderSceneW.
-        mode: A string representing the mode, either 'SELECT' or 'DESELECT'.
-        types: A list consisting of strings representing the object types that are to be selected.
-        exclude_types: An optional list consisting of strings representing the object types that are to be
-            deselected, these types will not be included among the select_types.
-        layers: An optional list consisting of integers representing the layers whose objects
-            are up for selection.
-        exclude_layers: An optional list consisting of integers representing the layers whose objects
-            will be deselected, these layers will not be included among the layer_numbers.
-        objects: An optional list consisting of specific objects that are to be selected.
-    """
-    scene_instance.set_as_active()
-
-    if layers is None:
-        if types != ['ALL'] and types != ['OBJECT']:
-            layers = BlenderSceneW.affected_layers_numbers
-
-    if BlenderSceneW.original_scene.CheckboxOnlySelected:
-        objects = BlenderSceneW.only_selected
-
-    if mode == 'SELECT':
-        BlenderSceneW.select(scene_instance, types, exclude_types, layers, exclude_layers, objects)
-
-    elif mode == 'DESELECT':
-        BlenderSceneW.deselect(scene_instance, types, exclude_types, layers, exclude_layers, objects)
-
-    else:
-        return "Error: No such mode as '{}'.".format(mode)
+from . import wvariables
 
 
 def comp_add_wireframe_bi(clay_scene_instance, wire_scene_intance):
@@ -145,11 +24,11 @@ def comp_add_wireframe_bi(clay_scene_instance, wire_scene_intance):
     rlwire = tree.nodes.new('CompositorNodeRLayers')
     rlwire.location = -400, -75
     rlwire.scene = bpy.data.scenes[wire_scene_intance.name]
-    rlwire.layer = BlenderSceneW.rlname
+    rlwire.layer = wvariables.rlname
 
     rlclay = tree.nodes.new('CompositorNodeRLayers')
     rlclay.location = -400, 250
-    rlclay.layer = BlenderSceneW.rlname_2
+    rlclay.layer = wvariables.rlname_2
 
     comp = tree.nodes.new('CompositorNodeComposite')
     comp.location = 400, 65
@@ -162,7 +41,7 @@ def comp_add_wireframe_bi(clay_scene_instance, wire_scene_intance):
     links.new(rlclay.outputs[0], alphaover.inputs[1])
     links.new(rlwire.outputs[0], alphaover.inputs[2])
 
-    if BlenderSceneW.original_scene.CheckboxUseAO:
+    if wvariables.original_scene.CheckboxUseAO:
         colormix = tree.nodes.new('CompositorNodeMixRGB')
         colormix.location = 100, 140
         colormix.blend_type = 'MULTIPLY'
@@ -199,11 +78,11 @@ def comp_add_wireframe_freestyle(scene_instance):
 
     rlwire = tree.nodes.new('CompositorNodeRLayers')
     rlwire.location = -400, 250
-    rlwire.layer = BlenderSceneW.rlname
+    rlwire.layer = wvariables.rlname
 
     rlclay = tree.nodes.new('CompositorNodeRLayers')
     rlclay.location = -400, -75
-    rlclay.layer = BlenderSceneW.rlname_other
+    rlclay.layer = wvariables.rlname_other
 
     comp = tree.nodes.new('CompositorNodeComposite')
     comp.location = 400, 65
@@ -216,7 +95,7 @@ def comp_add_wireframe_freestyle(scene_instance):
     links.new(rlwire.outputs[0], alphaover.inputs[1])
     links.new(rlclay.outputs[0], alphaover.inputs[2])
 
-    if BlenderSceneW.original_scene.CheckboxUseAO:
+    if wvariables.original_scene.CheckboxUseAO:
         colormix_wire = tree.nodes.new('CompositorNodeMixRGB')
         colormix_wire.location = -125, 150
         colormix_wire.blend_type = 'MULTIPLY'
@@ -269,7 +148,7 @@ def comp_add_ao(scene_instance):
 
     rlayer = tree.nodes.new('CompositorNodeRLayers')
     rlayer.location = -300, 100
-    rlayer.layer = BlenderSceneW.rlname
+    rlayer.layer = wvariables.rlname
 
     comp = tree.nodes.new('CompositorNodeComposite')
     comp.location = 300, 130
@@ -298,7 +177,7 @@ def add_clay_mat_to_selected(scene_instance):
         The clay material data object.
     """
     scene = scene_instance.set_as_active()
-    clay_color = BlenderSceneW.original_scene.ColorClay
+    clay_color = wvariables.original_scene.ColorClay
     # separating rgb from alpha
     clay_color_rgb = clay_color[0:3]
 
@@ -336,7 +215,7 @@ def add_clay_mat_to_selected(scene_instance):
                 mesh_select = 0
                 break
 
-    if mesh_select == 1 and BlenderSceneW.original_scene.WireframeType != 'WIREFRAME_MODIFIER':
+    if mesh_select == 1 and wvariables.original_scene.WireframeType != 'WIREFRAME_MODIFIER':
         scene.render.layers.active.material_override = clay_mat
 
     else:
@@ -373,7 +252,7 @@ def add_wireframe_bi_to_selected(scene_instance):
         The wireframe material data object.
     """
     scene_instance.set_as_active()
-    wire_color = BlenderSceneW.original_scene.ColorWire
+    wire_color = wvariables.original_scene.ColorWire
     # separating rgb and alpha
     wire_color_rgb = wire_color[0:3]
     wire_color_alpha = wire_color[-1]
@@ -403,7 +282,7 @@ def add_wireframe_modifier(scene_instance):
         The wireframe material data object.
     """
     scene = scene_instance.set_as_active()
-    wire_color = BlenderSceneW.original_scene.ColorWire
+    wire_color = wvariables.original_scene.ColorWire
     # separating rgb from alpha
     wireframe_color_rgb = wire_color[0:3]
 
@@ -448,7 +327,7 @@ def add_wireframe_modifier(scene_instance):
             wireframe_modifier.use_even_offset = False
             wireframe_modifier.use_replace = False
             wireframe_modifier.material_offset = bpy.context.object.active_material_index
-            wireframe_modifier.thickness = BlenderSceneW.original_scene.SliderWireThicknessModifier
+            wireframe_modifier.thickness = wvariables.original_scene.SliderWireThicknessModifier
 
     return wireframe_mat
 
@@ -464,7 +343,7 @@ def add_wireframe_freestyle(scene_instance):
     """
     scene = scene_instance.set_as_active()
 
-    select_super(scene_instance, 'SELECT', ['MESH'], ['ELSE'])
+    BlenderSceneW.select(scene_instance, 'SELECT', ['MESH'], ['ELSE'])
 
     for obj in scene.objects:
         if obj.select:
@@ -480,8 +359,8 @@ def add_wireframe_freestyle(scene_instance):
 
     scene.render.use_freestyle = True
 
-    select_super(scene_instance, 'DESELECT', ['ALL'])
-    scene.render.layers.active = scene.render.layers[BlenderSceneW.rlname]
+    BlenderSceneW.select(scene_instance, 'DESELECT', ['ALL'])
+    scene.render.layers.active = scene.render.layers[wvariables.rlname]
 
     for n in scene.render.layers.active.freestyle_settings.linesets:
         scene.render.layers.active.freestyle_settings.linesets.remove(n)
@@ -490,8 +369,8 @@ def add_wireframe_freestyle(scene_instance):
     lineset.select_edge_mark = True
     lineset.select_crease = False
 
-    wire_color = BlenderSceneW.original_scene.ColorWire
-    wire_thickness = BlenderSceneW.original_scene.SliderWireThicknessFreestyle
+    wire_color = wvariables.original_scene.ColorWire
+    wire_thickness = wvariables.original_scene.SliderWireThicknessFreestyle
 
     wire_color_rgb = wire_color[0:3]
     wire_color_alpha = wire_color[-1]
@@ -538,15 +417,15 @@ def clean_objects_bi(scene_instance):
     previous_layers = list(scene.layers)
     scene.layers = (True,)*20
 
-    if BlenderSceneW.original_scene.CheckboxOnlySelected:
+    if wvariables.original_scene.CheckboxOnlySelected:
         for obj in scene.objects:
-            if obj not in BlenderSceneW.only_selected and obj.type != 'CAMERA':
+            if obj not in wvariables.only_selected and obj.type != 'CAMERA':
                 obj.select = True
                 bpy.ops.object.delete()
 
     else:
         for obj in scene.objects:
-            if (btools.object_on_layer(obj, BlenderSceneW.all_layers_used_numbers) is False
+            if (btools.object_on_layer(obj, wvariables.all_layers_used_numbers) is False
                     or obj.type != 'MESH') and obj.type != 'CAMERA':
                 obj.select = True
                 bpy.ops.object.delete()
@@ -562,16 +441,16 @@ def set_layers_used():
     """
     layers_used = [False, ]*20
 
-    if BlenderSceneW.original_scene.CheckboxOnlySelected:
+    if wvariables.original_scene.CheckboxOnlySelected:
         for obj in bpy.context.scene.objects:
             if obj.select:
                 layers_used = btools.add_layerlists(layers_used, obj.layers)
 
-        layers_used = btools.add_layerlists(layers_used, BlenderSceneW.original_scene.LayersOther)
+        layers_used = btools.add_layerlists(layers_used, wvariables.original_scene.LayersOther)
 
     else:
-        layers_used = btools.add_layerlists(BlenderSceneW.original_scene.LayersAffected,
-                                                 BlenderSceneW.original_scene.LayersOther)
+        layers_used = btools.add_layerlists(wvariables.original_scene.LayersAffected,
+                                            wvariables.original_scene.LayersOther)
 
     return layers_used
 
@@ -585,13 +464,13 @@ def set_layers_affected():
     """
     layers_affected = [False, ]*20
 
-    if BlenderSceneW.original_scene.CheckboxOnlySelected:
+    if wvariables.original_scene.CheckboxOnlySelected:
         for obj in bpy.context.scene.objects:
             if obj.select:
                 layers_affected = btools.add_layerlists(layers_affected, obj.layers)
 
     else:
-        layers_affected = BlenderSceneW.original_scene.LayersAffected
+        layers_affected = wvariables.original_scene.LayersAffected
 
     return layers_affected
 
@@ -605,7 +484,7 @@ def set_layers_other():
     layers_other = [False, ]*20
 
     for index in range(0, 20):
-        if layers_other[index] and BlenderSceneW.original_scene.LayersAffected[index]:
+        if layers_other[index] and wvariables.original_scene.LayersAffected[index]:
             layers_other[index] = False
 
     return layers_other

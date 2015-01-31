@@ -1,49 +1,5 @@
 # noinspection PyUnresolvedReferences
 import bpy
-from .bscene_w import BlenderSceneW
-
-
-def copy_scene(new_name='', renderer='CYCLES'):
-    """Creates a full copy of the scene.
-
-    Args:
-        new_name: A string representing the new scene's name.
-        renderer: A string representing the new scene's render engine, e.g. 'CYCLES'.
-
-    Returns:
-        A string that is the new scene's name.
-    """
-    bpy.context.screen.scene = BlenderSceneW.original_scene
-
-    # builds the new scene's name
-    name = '{}_{}'.format(BlenderSceneW.original_scene.name, new_name)
-
-    bpy.ops.scene.new(type='FULL_COPY')
-    bpy.context.scene.name = name
-    bpy.data.scenes[name].render.engine = renderer
-
-    return name
-
-
-def check_any_selected(scene, object_types=None):
-    """Checks the scene if any object is selected.
-
-    Args:
-        scene: The scene to be checked.
-        object_types: An optional list consisting of strings representing the object type(s)
-            that the object is allowed to be. If none specified, all types count.
-    """
-    scene = BlenderSceneW.set_as_active(scene)
-
-    if object_types is None:
-        object_types = ['MESH', 'CURVE', 'SURFACE', 'META', 'FONT', 'ARMATURE',
-                        'LATTICE', 'EMPTY', 'CAMERA', 'LAMP', 'SPEAKER']
-
-    for obj in scene.objects:
-        if obj.type in object_types and obj.select is True:
-            return True
-
-    return False
 
 
 def layerlist_to_numberlist(layer_list):
@@ -72,24 +28,6 @@ def layerlist_to_numberlist(layer_list):
             number_list.append(i)
 
     return number_list
-
-
-def object_on_layer(obj, layer_numbers):
-    """Checks if an object is on any of the layers represented by layer_numbers.
-
-    Args:
-        obj: The object it will check.
-        layer_numbers: A list consisiting of integers representing the layers that it will check
-            if the object is on.
-
-    Returns:
-        True if the object is on any of the layers represented by layer_numbers, else False.
-    """
-    for n in layer_numbers:
-        if obj.layers[n]:
-            return True
-
-    return False
 
 
 def find_material_index(obj, material):

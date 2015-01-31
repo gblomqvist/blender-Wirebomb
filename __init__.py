@@ -30,7 +30,7 @@ if 'bpy' in locals():
     if 'woperators' in locals():
         imp.reload(woperators)
 
-    if 'bscene' in locals():
+    if 'bscene_w' in locals():
         imp.reload(bscene_w)
 
 # noinspection PyUnresolvedReferences

@@ -1,6 +1,5 @@
 # noinspection PyUnresolvedReferences
 import bpy
-from . import btools
 
 
 class BlenderScene():
@@ -10,20 +9,43 @@ class BlenderScene():
         name: The name of the scene.
     """
 
-    def __init__(self, new_name, renderer):
+    def __init__(self, scene, new_scene, new_name, renderer):
         """Creates a copy of the scene if the 'New Scene' checkbox is checked.
 
         Args:
             new_name: A string representing the new scene's name.
             renderer: A string representing the new scene's render engine.
         """
-        if BlenderScene.original_scene.CheckboxNewScene:
-            self.name = btools.copy_scene(new_name, renderer)
+        if new_scene:
+            self.name = self.copy_scene(scene, new_name, renderer)
+            self.parent_scene = scene
 
         else:
-            self.name = BlenderScene.original_scene.name
+            self.name = scene.name
 
         self.space_data = None
+
+    @staticmethod
+    def copy_scene(scene, new_name='', renderer='CYCLES'):
+        """Creates a full copy of the scene.
+
+        Args:
+            new_name: A string representing the new scene's name.
+            renderer: A string representing the new scene's render engine, e.g. 'CYCLES'.
+
+        Returns:
+            A string that is the new scene's name.
+        """
+        bpy.context.screen.scene = scene
+
+        # builds the new scene's name
+        name = '{}_{}'.format(scene.name, new_name)
+
+        bpy.ops.scene.new(type='FULL_COPY')
+        bpy.context.scene.name = name
+        bpy.data.scenes[name].render.engine = renderer
+
+        return name
 
     def set_as_active(self):
         """Sets the scene as active.
@@ -52,6 +74,46 @@ class BlenderScene():
             if obj.select is True and obj.type in object_types:
                 scene.objects.active = obj
                 break
+
+    def check_any_selected(self, object_types=None):
+        """Checks the scene if any object is selected.
+
+        Args:
+            scene: The scene to be checked.
+            object_types: An optional list consisting of strings representing the object type(s)
+                that the object is allowed to be. If none specified, all types count.
+        """
+        scene = self.set_as_active()
+
+        if object_types is None:
+            object_types = ['MESH', 'CURVE', 'SURFACE', 'META', 'FONT', 'ARMATURE',
+                            'LATTICE', 'EMPTY', 'CAMERA', 'LAMP', 'SPEAKER']
+
+        for obj in scene.objects:
+            if obj.type in object_types and obj.select is True:
+                return True
+
+        return False
+
+    def object_on_layer(self, obj, layer_numbers):
+        """Checks if an object is on any of the layers represented by layer_numbers.
+
+        Args:
+            obj: The object it will check.
+            layer_numbers: A list consisiting of integers representing the layers that it will check
+                if the object is on.
+
+        Returns:
+            True if the object is on any of the layers represented by layer_numbers, else False.
+        """
+        scene = self.set_as_active()
+
+        if obj in scene.objects:
+            for n in layer_numbers:
+                if obj.layers[n]:
+                    return True
+
+        return False
 
     def select(self, types, exclude_types=None, layers=None, exclude_layers=None, objects=None):
         """Selects objects.
@@ -93,11 +155,11 @@ class BlenderScene():
 
         if types == ['ALL'] or types == ['OBJECT']:
             for obj in scene.objects:
-                if (obj.type not in exclude_types and btools.object_on_layer(obj, layers)
-                    and not btools.object_on_layer(obj, exclude_layers)):
+                if (obj.type not in exclude_types and self.object_on_layer(obj, layers)
+                        and not self.object_on_layer(obj, exclude_layers)):
                     obj.select = True
 
-                elif obj.type in exclude_types or btools.object_on_layer(obj, exclude_layers):
+                elif obj.type in exclude_types or self.object_on_layer(obj, exclude_layers):
                     obj.select = False
 
         else:
@@ -106,11 +168,11 @@ class BlenderScene():
                     obj.select = True
 
                 elif (obj.type in types and obj.type not in exclude_types
-                      and btools.object_on_layer(obj, layers)
-                      and not btools.object_on_layer(obj, exclude_layers)):
+                      and self.object_on_layer(obj, layers)
+                      and not self.object_on_layer(obj, exclude_layers)):
                     obj.select = True
 
-                elif obj.type in exclude_types or btools.object_on_layer(obj, exclude_layers):
+                elif obj.type in exclude_types or self.object_on_layer(obj, exclude_layers):
                     obj.select = False
 
         self.set_active_object(types)
@@ -122,8 +184,8 @@ class BlenderScene():
 
         Args:
             types: A list consisting of strings representing the object types that are to be deselected.
-            exclude_types: An optional list consisting of strings representing the object types that are to be deselected,
-                these types will not be included among the select_types.
+            exclude_types: An optional list consisting of strings representing the object types that are to be
+                deselected, these types will not be included among the select_types.
             layers: An optional list consisting of integers representing the layers whose objects
                 are up for deselection.
             exclude_layers: An optional list consisting of integers representing the layers whose objects
@@ -155,8 +217,8 @@ class BlenderScene():
 
         if types == ['ALL'] or types == ['OBJECT']:
             for obj in scene.objects:
-                if (obj.type not in exclude_types and btools.object_on_layer(obj, layers)
-                        and not btools.object_on_layer(obj, exclude_layers)):
+                if (obj.type not in exclude_types and self.object_on_layer(obj, layers)
+                        and not self.object_on_layer(obj, exclude_layers)):
                     obj.select = False
 
         else:
@@ -165,8 +227,8 @@ class BlenderScene():
                     obj.select = False
 
                 elif (obj.type in types and obj.type not in exclude_types
-                      and btools.object_on_layer(obj, layers)
-                      and not btools.object_on_layer(obj, exclude_layers)):
+                      and self.object_on_layer(obj, layers)
+                      and not self.object_on_layer(obj, exclude_layers)):
                     obj.select = False
 
         self.set_active_object(types)
