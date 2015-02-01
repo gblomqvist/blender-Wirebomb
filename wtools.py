@@ -1,8 +1,8 @@
 # noinspection PyUnresolvedReferences
 import bpy
 from . import btools
-from .bscene_w import BlenderSceneW
 from . import wvariables
+from .bscene_w import BlenderSceneW
 
 
 def comp_add_wireframe_bi(clay_scene_instance, wire_scene_intance):
@@ -82,7 +82,7 @@ def comp_add_wireframe_freestyle(scene_instance):
 
     rlclay = tree.nodes.new('CompositorNodeRLayers')
     rlclay.location = -400, -75
-    rlclay.layer = wvariables.rlname_other
+    rlclay.layer = wvariables.rlname_2
 
     comp = tree.nodes.new('CompositorNodeComposite')
     comp.location = 400, 65
@@ -425,7 +425,7 @@ def clean_objects_bi(scene_instance):
 
     else:
         for obj in scene.objects:
-            if (btools.object_on_layer(obj, wvariables.all_layers_used_numbers) is False
+            if (BlenderSceneW.object_on_layer(scene_instance, obj, wvariables.all_layers_used_numbers) is False
                     or obj.type != 'MESH') and obj.type != 'CAMERA':
                 obj.select = True
                 bpy.ops.object.delete()

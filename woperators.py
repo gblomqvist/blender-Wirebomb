@@ -1,13 +1,13 @@
 # noinspection PyUnresolvedReferences
 import bpy
-from .bscene_w import BlenderSceneW
 from . import wtools
 from . import btools
 from . import wvariables
+from .bscene_w import BlenderSceneW
 
 
 class WireframeOperator(bpy.types.Operator):
-    """---"""
+    """Set up wireframe/clay render."""
     bl_label = "Wireframe"
     bl_idname = 'wireframe_op.create_wireframe'
 
@@ -27,11 +27,12 @@ class WireframeOperator(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        wvariables.affected_layers_numbers = btools.layerlist_to_numberlist(wtools.set_layers_affected())
+
         if (bpy.context.scene.CheckboxOnlySelected
-                and not BlenderSceneW.check_any_selected(bpy.context.scene, ['MESH'])):
+                and not btools.check_any_selected(bpy.context.scene, ['MESH'])):
             self.error_msg = "Checkbox 'Only Selected' is activated but no mesh is selected!"
             self.success = False
+            wvariables.error_1 = True
 
         elif not any(list(bpy.context.scene.LayersAffected)) and not any(list(bpy.context.scene.LayersOther)):
             self.error_msg = "No layers are selected!"
@@ -73,30 +74,28 @@ class WireframeOperator(bpy.types.Operator):
             if wvariables.original_scene.CheckboxOnlySelected:
                 wvariables.only_selected = wire_scene.selected_objects_to_list(['MESH'])
 
-            wire_scene.select(wire_scene, 'DESELECT', ['ALL'])
+            wire_scene.select('DESELECT', ['ALL'])
             wtools.clean_objects_bi(wire_scene)
 
-            wire_scene.select(wire_scene, 'SELECT', ['ALL'])
+            wire_scene.select('SELECT', ['ALL'])
             wire_scene.clear_all_materials()
 
-            wire_scene.set_up_rlayer(wire_scene, 'wireframe', [0, 1], [0], [1])
+            wire_scene.set_up_rlayer('wireframe', [0, 1], [0], [1])
 
-            wire_scene.select(wire_scene, 'SELECT', ['MESH', 'CAMERA'], ['ELSE'],
-                              wvariables.affected_layers_numbers, ['ELSE'])
+            wire_scene.select('SELECT', ['MESH', 'CAMERA'], ['ELSE'], wvariables.affected_layers_numbers, ['ELSE'])
             wire_scene.move_selected_to_layer(0)
 
-            wire_scene.select(wire_scene, 'SELECT', ['MESH'], ['ELSE'],
-                              wvariables.other_layers_numbers, ['ELSE'])
+            wire_scene.select('SELECT', ['MESH'], ['ELSE'], wvariables.other_layers_numbers, ['ELSE'])
             wire_scene.move_selected_to_layer(1)
 
-            wire_scene.select(wire_scene, 'SELECT', ['MESH'], ['ELSE'], [0], ['ELSE'])
+            wire_scene.select('SELECT', ['MESH'], ['ELSE'], [0], ['ELSE'])
             wire_scene.copy_selected_to_layer(1)
-            wire_scene.select(wire_scene, 'DESELECT', ['ALL'])
+            wire_scene.select('DESELECT', ['ALL'])
 
-            wire_scene.select(wire_scene, 'SELECT', ['MESH'], ['ELSE'], [0])
+            wire_scene.select('SELECT', ['MESH'], ['ELSE'], [0])
             wvariables.wire_bi_mat = wtools.add_wireframe_bi_to_selected(wire_scene)
 
-            wire_scene.select(wire_scene, 'DESELECT', ['ALL'])
+            wire_scene.select('DESELECT', ['ALL'])
 
             bpy.context.scene.render.alpha_mode = 'TRANSPARENT'
 
@@ -105,29 +104,28 @@ class WireframeOperator(bpy.types.Operator):
                                        'wireframe_clay', 'CYCLES')
 
         else:
-            clay_scene = BlenderSceneW(wvariables.original_scene, bpy.context.scene.CheckboxNewScene,
-                                       'clay', 'CYCLES')
+            clay_scene = BlenderSceneW(wvariables.original_scene, bpy.context.scene.CheckboxNewScene, 'clay', 'CYCLES')
 
         clay_scene.set_as_active()
 
         if wvariables.original_scene.CheckboxOnlySelected:
             wvariables.only_selected = clay_scene.selected_objects_to_list(['MESH'])
 
-        clay_scene.select(clay_scene, 'DESELECT', ['ALL'])
-        clay_scene.set_up_rlayer(clay_scene, 'clay')
+        clay_scene.select('DESELECT', ['ALL'])
+        clay_scene.set_up_rlayer('clay')
 
         if not (wvariables.original_scene.CheckboxOnlyClay and wvariables.original_scene.CheckboxUseClay):
             wtools.comp_add_wireframe_bi(clay_scene, wire_scene)
             clay_scene.comp_show_backdrop()
 
         if wvariables.original_scene.CheckboxUseClay:
-            clay_scene.select(clay_scene, 'SELECT', ['MESH'], ['ELSE'])
+            clay_scene.select('SELECT', ['MESH'], ['ELSE'])
             wvariables.clay_mat = wtools.add_clay_mat_to_selected(clay_scene)
 
         if wvariables.original_scene.CheckboxUseAO:
             wtools.set_up_world_ao(clay_scene)
 
-        clay_scene.select(clay_scene, 'DESELECT', ['ALL'])
+        clay_scene.select('DESELECT', ['ALL'])
 
     @staticmethod
     def create_wireframe_scene_freestyle():
@@ -145,16 +143,16 @@ class WireframeOperator(bpy.types.Operator):
         if wvariables.original_scene.CheckboxOnlySelected:
             wvariables.only_selected = wire_scene.selected_objects_to_list(['MESH'])
 
-        wire_scene.select(wire_scene, 'DESELECT', ['ALL'])
+        wire_scene.select('DESELECT', ['ALL'])
 
         if not (wvariables.original_scene.CheckboxOnlyClay and wvariables.original_scene.CheckboxUseClay):
-            wire_scene.set_up_rlayer(wire_scene, 'wireframe', rlname_other='clay')
+            wire_scene.set_up_rlayer('wireframe', rlname_other='clay')
 
         else:
-            wire_scene.set_up_rlayer(wire_scene, 'clay')
+            wire_scene.set_up_rlayer('clay')
 
         if wvariables.original_scene.CheckboxUseClay:
-            wire_scene.select(wire_scene, 'SELECT', ['MESH'], ['ELSE'])
+            wire_scene.select('SELECT', ['MESH'], ['ELSE'])
             wvariables.clay_mat = wtools.add_clay_mat_to_selected(wire_scene)
 
         if not (wvariables.original_scene.CheckboxOnlyClay and wvariables.original_scene.CheckboxUseClay):
@@ -168,7 +166,7 @@ class WireframeOperator(bpy.types.Operator):
             wtools.comp_add_wireframe_freestyle(wire_scene)
             bpy.context.scene.cycles.film_transparent = True
 
-        wire_scene.select(wire_scene, 'DESELECT', ['ALL'])
+        wire_scene.select('DESELECT', ['ALL'])
 
     @staticmethod
     def create_wireframe_scene_modifier():
@@ -186,16 +184,16 @@ class WireframeOperator(bpy.types.Operator):
         if wvariables.original_scene.CheckboxOnlySelected:
             wvariables.only_selected = wire_scene.selected_objects_to_list(['MESH'])
 
-        wire_scene.select(wire_scene, 'DESELECT', ['ALL'])
+        wire_scene.select('DESELECT', ['ALL'])
 
         if not (wvariables.original_scene.CheckboxOnlyClay and wvariables.original_scene.CheckboxUseClay):
-            wire_scene.set_up_rlayer(wire_scene, 'wireframe')
+            wire_scene.set_up_rlayer('wireframe')
 
         else:
-            wire_scene.set_up_rlayer(wire_scene, 'clay')
+            wire_scene.set_up_rlayer('clay')
 
         if wvariables.original_scene.CheckboxUseClay:
-            wire_scene.select(wire_scene, 'SELECT', ['MESH'], ['ELSE'])
+            wire_scene.select('SELECT', ['MESH'], ['ELSE'])
             wvariables.clay_mat = wtools.add_clay_mat_to_selected(wire_scene)
 
         if wvariables.original_scene.CheckboxUseAO:
@@ -203,14 +201,14 @@ class WireframeOperator(bpy.types.Operator):
             wtools.comp_add_ao(wire_scene)
 
         if not (wvariables.original_scene.CheckboxOnlyClay and wvariables.original_scene.CheckboxUseClay):
-            wire_scene.select(wire_scene, 'SELECT', ['MESH'], ['ELSE'])
+            wire_scene.select('SELECT', ['MESH'], ['ELSE'])
             wvariables.wire_modifier_mat = wtools.add_wireframe_modifier(wire_scene)
 
-        wire_scene.select(wire_scene, 'DESELECT', ['ALL'])
+        wire_scene.select('DESELECT', ['ALL'])
 
 
 class ClearWireframesOperator(bpy.types.Operator):
-    """An operator that delete scenes that this add-on has created."""
+    """Remove previously created scenes."""
     bl_label = "Clear wireframes"
     bl_idname = 'wireframe_op.clear_wireframes'
 
@@ -224,7 +222,7 @@ class ClearWireframesOperator(bpy.types.Operator):
 
 
 class SelectLayersAffectedOperator(bpy.types.Operator):
-    """An operator that selects all 'Affected layers'."""
+    """Select all layers."""
     bl_label = "Select all layers affected"
     bl_idname = 'wireframe_op.select_layers_affected'
 
@@ -236,7 +234,7 @@ class SelectLayersAffectedOperator(bpy.types.Operator):
 
 
 class SelectLayersOtherOperator(bpy.types.Operator):
-    """An operator that selects all 'Other layers'."""
+    """Select all layers."""
     bl_label = "Select all other layers"
     bl_idname = 'wireframe_op.select_layers_other'
 
@@ -248,7 +246,7 @@ class SelectLayersOtherOperator(bpy.types.Operator):
 
 
 class DeselectLayersAffectedOperator(bpy.types.Operator):
-    """An operator that deselects all 'Affected layers'."""
+    """Deselect all layers."""
     bl_label = "Deselect all layers affected"
     bl_idname = 'wireframe_op.deselect_layers_affected'
 
@@ -260,7 +258,7 @@ class DeselectLayersAffectedOperator(bpy.types.Operator):
 
 
 class DeselectLayersOtherOperator(bpy.types.Operator):
-    """An operator that deselects all 'Other layers'."""
+    """Deselect all layers."""
     bl_label = "Deselect all other layers"
     bl_idname = 'wireframe_op.deselect_layers_other'
 

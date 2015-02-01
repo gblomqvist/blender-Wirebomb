@@ -26,13 +26,16 @@ class BlenderSceneW(BlenderScene):
 
         if layers is None:
             if types != ['ALL'] and types != ['OBJECT']:
-                layers = self.affected_layers_numbers
+                layers = wvariables.affected_layers_numbers
+
+            else:
+                layers = all_layer_numbers
 
         elif layers == ['EVERY']:
             layers = all_layer_numbers
 
         if wvariables.original_scene.CheckboxOnlySelected:
-            objects = self.only_selected
+            objects = wvariables.only_selected
 
         elif objects is None:
             objects = []
@@ -156,7 +159,7 @@ class BlenderSceneW(BlenderScene):
 
             if (wvariables.original_scene.CheckboxComp
                     and wvariables.original_scene.WireframeType == 'WIREFRAME_FREESTYLE'):
-                scene.render.layers[wvariables.rlname_other].use_pass_ambient_occlusion = True
+                scene.render.layers[rlname_other].use_pass_ambient_occlusion = True
 
         for i in layer_numbers:
             if (wvariables.original_scene.CheckboxComp

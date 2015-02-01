@@ -2,6 +2,25 @@
 import bpy
 
 
+def check_any_selected(scene, object_types=None):
+    """Checks the scene if any object is selected.
+
+    Args:
+        scene: The scene to be checked.
+        object_types: An optional list consisting of strings representing the object type(s)
+            that the object is allowed to be. If none specified, all types count.
+    """
+    if object_types is None:
+        object_types = ['MESH', 'CURVE', 'SURFACE', 'META', 'FONT', 'ARMATURE',
+                        'LATTICE', 'EMPTY', 'CAMERA', 'LAMP', 'SPEAKER']
+
+    for obj in scene.objects:
+        if obj.type in object_types and obj.select is True:
+            return True
+
+    return False
+
+
 def layerlist_to_numberlist(layer_list):
     """Converts a layer list to a number list.
 

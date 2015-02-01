@@ -75,26 +75,6 @@ class BlenderScene():
                 scene.objects.active = obj
                 break
 
-    def check_any_selected(self, object_types=None):
-        """Checks the scene if any object is selected.
-
-        Args:
-            scene: The scene to be checked.
-            object_types: An optional list consisting of strings representing the object type(s)
-                that the object is allowed to be. If none specified, all types count.
-        """
-        scene = self.set_as_active()
-
-        if object_types is None:
-            object_types = ['MESH', 'CURVE', 'SURFACE', 'META', 'FONT', 'ARMATURE',
-                            'LATTICE', 'EMPTY', 'CAMERA', 'LAMP', 'SPEAKER']
-
-        for obj in scene.objects:
-            if obj.type in object_types and obj.select is True:
-                return True
-
-        return False
-
     def object_on_layer(self, obj, layer_numbers):
         """Checks if an object is on any of the layers represented by layer_numbers.
 
@@ -108,7 +88,7 @@ class BlenderScene():
         """
         scene = self.set_as_active()
 
-        if obj in scene.objects:
+        if obj in [e for e in scene.objects]:
             for n in layer_numbers:
                 if obj.layers[n]:
                     return True
@@ -258,7 +238,7 @@ class BlenderScene():
 
         bpy.ops.object.duplicate()
         self.move_selected_to_layer(to_layer)
-        self.select(self, 'DESELECT', ['ALL'], [to_layer])
+        self.select('DESELECT', ['ALL'], [to_layer])
 
         scene.layers = previous_layers
 
@@ -268,7 +248,7 @@ class BlenderScene():
         previous_layers = list(scene.layers)
         scene.layers = (True,) * 20
 
-        self.select(self, 'SELECT', ['MESH'], ['ELSE'])
+        self.select('SELECT', ['MESH'], ['ELSE'])
         bpy.context.object.data.materials.clear()
         bpy.ops.object.material_slot_copy()
 
