@@ -7,7 +7,7 @@ from .bscene_w import BlenderSceneW
 
 
 class WireframeOperator(bpy.types.Operator):
-    """Set up wireframe/clay render."""
+    """Set up wireframe/clay render"""
     bl_label = "Wireframe"
     bl_idname = 'wireframe_op.create_wireframe'
 
@@ -208,7 +208,7 @@ class WireframeOperator(bpy.types.Operator):
 
 
 class ClearWireframesOperator(bpy.types.Operator):
-    """Remove previously created scenes."""
+    """Remove previously created scenes"""
     bl_label = "Clear wireframes"
     bl_idname = 'wireframe_op.clear_wireframes'
 
@@ -222,7 +222,7 @@ class ClearWireframesOperator(bpy.types.Operator):
 
 
 class SelectLayersAffectedOperator(bpy.types.Operator):
-    """Select all layers."""
+    """Select all layers"""
     bl_label = "Select all layers affected"
     bl_idname = 'wireframe_op.select_layers_affected'
 
@@ -234,7 +234,7 @@ class SelectLayersAffectedOperator(bpy.types.Operator):
 
 
 class SelectLayersOtherOperator(bpy.types.Operator):
-    """Select all layers."""
+    """Select all layers"""
     bl_label = "Select all other layers"
     bl_idname = 'wireframe_op.select_layers_other'
 
@@ -246,7 +246,7 @@ class SelectLayersOtherOperator(bpy.types.Operator):
 
 
 class DeselectLayersAffectedOperator(bpy.types.Operator):
-    """Deselect all layers."""
+    """Deselect all layers"""
     bl_label = "Deselect all layers affected"
     bl_idname = 'wireframe_op.deselect_layers_affected'
 
@@ -258,7 +258,7 @@ class DeselectLayersAffectedOperator(bpy.types.Operator):
 
 
 class DeselectLayersOtherOperator(bpy.types.Operator):
-    """Deselect all layers."""
+    """Deselect all layers"""
     bl_label = "Deselect all other layers"
     bl_idname = 'wireframe_op.deselect_layers_other'
 
