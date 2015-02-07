@@ -1,5 +1,6 @@
 rlname = None
 rlname_2 = None
+rlname_other = None
 
 original_scene = None
 

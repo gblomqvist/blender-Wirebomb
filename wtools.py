@@ -82,7 +82,7 @@ def comp_add_wireframe_freestyle(scene_instance):
 
     rlclay = tree.nodes.new('CompositorNodeRLayers')
     rlclay.location = -400, -75
-    rlclay.layer = wvariables.rlname_2
+    rlclay.layer = wvariables.rlname_other
 
     comp = tree.nodes.new('CompositorNodeComposite')
     comp.location = 400, 65
@@ -177,34 +177,39 @@ def add_clay_mat_to_selected(scene_instance):
         The clay material data object.
     """
     scene = scene_instance.set_as_active()
-    clay_color = wvariables.original_scene.ColorClay
-    # separating rgb from alpha
-    clay_color_rgb = clay_color[0:3]
 
-    clay_mat = bpy.data.materials.new('clay')
+    if bpy.context.scene.CheckboxUseMatClay:
+        clay_mat = bpy.data.materials[bpy.context.scene.Materials.mat_clay]
 
-    clay_mat.use_nodes = True
-    tree = clay_mat.node_tree
-    tree.nodes.clear()
+    else:
+        clay_color = wvariables.original_scene.ColorClay
+        # separating rgb from alpha
+        clay_color_rgb = clay_color[0:3]
 
-    # creating the nodes
-    diffuse_node = tree.nodes.new('ShaderNodeBsdfDiffuse')
-    diffuse_node.location = -150, 50
-    diffuse_node.inputs['Color'].default_value = clay_color
-    diffuse_node.inputs['Roughness'].default_value = 0.05
-    diffuse_node.color = clay_color_rgb
+        clay_mat = bpy.data.materials.new('clay')
 
-    output_node = tree.nodes.new('ShaderNodeOutputMaterial')
-    output_node.location = 150, 50
+        clay_mat.use_nodes = True
+        tree = clay_mat.node_tree
+        tree.nodes.clear()
 
-    # sets the viewport color
-    clay_mat.diffuse_color = clay_color_rgb
+        # creating the nodes
+        diffuse_node = tree.nodes.new('ShaderNodeBsdfDiffuse')
+        diffuse_node.location = -150, 50
+        diffuse_node.inputs['Color'].default_value = clay_color
+        diffuse_node.inputs['Roughness'].default_value = 0.05
+        diffuse_node.color = clay_color_rgb
 
-    # connecting the nodes.
-    tree.links.new(diffuse_node.outputs[0], output_node.inputs[0])
+        output_node = tree.nodes.new('ShaderNodeOutputMaterial')
+        output_node.location = 150, 50
 
-    for node in tree.nodes:
-        node.select = False
+        # sets the viewport color
+        clay_mat.diffuse_color = clay_color_rgb
+
+        # connecting the nodes.
+        tree.links.new(diffuse_node.outputs[0], output_node.inputs[0])
+
+        for node in tree.nodes:
+            node.select = False
 
     # 1 if all meshes is selected, 0 if not.
     mesh_select = 1
@@ -252,19 +257,24 @@ def add_wireframe_bi_to_selected(scene_instance):
         The wireframe material data object.
     """
     scene_instance.set_as_active()
-    wire_color = wvariables.original_scene.ColorWire
-    # separating rgb and alpha
-    wire_color_rgb = wire_color[0:3]
-    wire_color_alpha = wire_color[-1]
 
-    wireframe_mat = bpy.data.materials.new('wireframe')
+    if bpy.context.scene.CheckboxUseMatWire:
+        wireframe_mat = bpy.data.materials[bpy.context.scene.Materials.mat_wire]
 
-    wireframe_mat.type = 'WIRE'
-    wireframe_mat.diffuse_color = wire_color_rgb
-    wireframe_mat.use_transparency = True
-    wireframe_mat.alpha = wire_color_alpha
-    wireframe_mat.use_shadeless = True
-    wireframe_mat.offset_z = 0.03
+    else:
+        wire_color = wvariables.original_scene.ColorWire
+        # separating rgb and alpha
+        wire_color_rgb = wire_color[0:3]
+        wire_color_alpha = wire_color[-1]
+
+        wireframe_mat = bpy.data.materials.new('wireframe')
+
+        wireframe_mat.type = 'WIRE'
+        wireframe_mat.diffuse_color = wire_color_rgb
+        wireframe_mat.use_transparency = True
+        wireframe_mat.alpha = wire_color_alpha
+        wireframe_mat.use_shadeless = True
+        wireframe_mat.offset_z = 0.03
 
     bpy.context.object.data.materials.append(wireframe_mat)
     bpy.ops.object.material_slot_copy()
@@ -282,34 +292,39 @@ def add_wireframe_modifier(scene_instance):
         The wireframe material data object.
     """
     scene = scene_instance.set_as_active()
-    wire_color = wvariables.original_scene.ColorWire
-    # separating rgb from alpha
-    wireframe_color_rgb = wire_color[0:3]
 
-    wireframe_mat = bpy.data.materials.new('wireframe')
+    if bpy.context.scene.CheckboxUseMatWire:
+        wireframe_mat = bpy.data.materials[bpy.context.scene.Materials.mat_wire]
 
-    wireframe_mat.use_nodes = True
-    tree = wireframe_mat.node_tree
-    tree.nodes.clear()
+    else:
+        wire_color = wvariables.original_scene.ColorWire
+        # separating rgb from alpha
+        wireframe_color_rgb = wire_color[0:3]
 
-    # creating the nodes
-    diffuse_node = tree.nodes.new('ShaderNodeBsdfDiffuse')
-    diffuse_node.location = -150, 50
-    diffuse_node.inputs['Color'].default_value = wire_color
-    diffuse_node.inputs['Roughness'].default_value = 0.05
-    diffuse_node.color = wireframe_color_rgb
+        wireframe_mat = bpy.data.materials.new('wireframe')
 
-    output_node = tree.nodes.new('ShaderNodeOutputMaterial')
-    output_node.location = 150, 50
+        wireframe_mat.use_nodes = True
+        tree = wireframe_mat.node_tree
+        tree.nodes.clear()
 
-    # sets the viewport color
-    wireframe_mat.diffuse_color = wireframe_color_rgb
+        # creating the nodes
+        diffuse_node = tree.nodes.new('ShaderNodeBsdfDiffuse')
+        diffuse_node.location = -150, 50
+        diffuse_node.inputs['Color'].default_value = wire_color
+        diffuse_node.inputs['Roughness'].default_value = 0.05
+        diffuse_node.color = wireframe_color_rgb
 
-    # connecting the nodes.
-    tree.links.new(diffuse_node.outputs[0], output_node.inputs[0])
+        output_node = tree.nodes.new('ShaderNodeOutputMaterial')
+        output_node.location = 150, 50
 
-    for node in tree.nodes:
-        node.select = False
+        # sets the viewport color
+        wireframe_mat.diffuse_color = wireframe_color_rgb
+
+        # connecting the nodes.
+        tree.links.new(diffuse_node.outputs[0], output_node.inputs[0])
+
+        for node in tree.nodes:
+            node.select = False
 
     fillout_mat = bpy.data.materials.new('fillout')
 

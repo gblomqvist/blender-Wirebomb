@@ -10,13 +10,6 @@ bl_info = {
     "tracker_url": "",
     "category": "Object"
 }
-import sys
-import os
-import json
-
-with open('WIREF', 'a') as f:
-    json.dump(sys.path, f)
-    json.dump(os.getcwd(), f)
 
 if 'bpy' in locals():
     import imp
@@ -48,14 +41,42 @@ from .bscene_w import BlenderSceneW
 
 def register():
     bpy.utils.register_module(__name__)
+    bpy.types.Scene.Materials = bpy.props.PointerProperty(type=MaterialSettings)
 
 
 def unregister():
     bpy.utils.unregister_module(__name__)
-
+    del bpy.types.scene.Materials
 
 if __name__ == '__main__':
     register()
+
+
+def scene_materials(scene, context):
+
+    mat_list = []
+    counter = 0
+
+    for mat in bpy.data.materials:
+        mat_list.append((mat.name, mat.name, ''))
+        counter += 1
+
+    return mat_list
+
+
+class MaterialSettings(bpy.types.PropertyGroup):
+
+    mat_clay = bpy.props.EnumProperty(items=scene_materials,
+                                      name='Clay material')
+
+    mat_wire = bpy.props.EnumProperty(items=scene_materials,
+                                      name='Clay material')
+
+
+class WireMaterials(bpy.types.PropertyGroup):
+
+    mat_wire = bpy.props.EnumProperty(items=scene_materials,
+                                      name='Wire material')
 
 
 def update_color_wire(self, context):
@@ -170,6 +191,10 @@ bpy.types.Scene.CheckboxClearRLayers = bpy.props.BoolProperty(default=True,
                                                               description="Remove all previous render layers")
 bpy.types.Scene.CheckboxUseClay = bpy.props.BoolProperty(default=True, description="Activate the use of clay")
 bpy.types.Scene.CheckboxOnlyClay = bpy.props.BoolProperty(default=False, description="Only use clay, no wires")
+bpy.types.Scene.CheckboxUseMatWire = bpy.props.BoolProperty(default=False, description="Use material from scene "
+                                                                                        "as wire material")
+bpy.types.Scene.CheckboxUseMatClay = bpy.props.BoolProperty(default=False, description="Use material from scene "
+                                                                                       "as clay material")
 
 # creates the sliders for the wireframe thickness
 bpy.types.Scene.SliderWireThicknessFreestyle = bpy.props.FloatProperty(name='Wire Thickness',
@@ -196,7 +221,7 @@ bpy.types.Scene.SliderWireThicknessModifier = bpy.props.FloatProperty(name='Wire
 class WireframePanel(bpy.types.Panel):
     """The panel in the GUI."""
 
-    bl_label = "Setup Wireframe"
+    bl_label = "Set up Wireframe"
     bl_idname = 'create_wireframe'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
@@ -265,16 +290,40 @@ class WireframePanel(bpy.types.Panel):
 
         layout.separator()
 
-        row_colorlabels = layout.row()
-        row_colorpickers = layout.row(align=True)
+        row = layout.row()
+        row.label(text='Wires:')
+        row = layout.row()
+        row.prop(context.scene, property='ColorWire', text='')
+        row = layout.row()
+        row.prop(context.scene, property='CheckboxUseMatWire', text='Material from scene:')
+        row_matwire = layout.row()
+        row_matwire.prop(context.scene.Materials, property='mat_wire', text='')
 
-        if not (bpy.context.scene.CheckboxOnlyClay and bpy.context.scene.CheckboxUseClay):
-            row_colorlabels.label(text='Wires:')
-            row_colorpickers.prop(context.scene, property='ColorWire', text='')
+        if bpy.context.scene.CheckboxUseMatWire:
+            row_matwire.active = True
 
-        if bpy.context.scene.CheckboxUseClay:
-            row_colorpickers.prop(context.scene, property='ColorClay', text='')
-            row_colorlabels.label(text='Clay:')
+        else:
+            row_matwire.active = False
+
+        layout.box()
+
+        row = layout.row()
+        row.label(text='Clay:')
+        row = layout.row()
+        row.prop(context.scene, property='ColorClay', text='')
+        row = layout.row()
+        row.prop(context.scene, property='CheckboxUseMatClay', text='Material from scene:')
+        row_matclay = layout.row()
+        row_matclay.prop(context.scene.Materials, property='mat_clay', text='')
+
+        if bpy.context.scene.CheckboxUseMatClay:
+            row_matclay.active = True
+
+        else:
+            row_matclay.active = False
+
+        layout.box()
+        layout.separator()
 
         row = layout.row()
 
