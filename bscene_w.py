@@ -62,14 +62,16 @@ class BlenderSceneW(BlenderScene):
                     elif obj.type in exclude_types or self.object_on_layer(obj, exclude_layers):
                         obj.select = False
 
-            else:
+            elif len(objects) > 0:
                 for obj in scene.objects:
                     if obj in objects:
                         obj.select = True
 
-                    elif (obj.type in types and obj.type not in exclude_types
-                          and self.object_on_layer(obj, layers)
-                          and not self.object_on_layer(obj, exclude_layers)):
+            else:
+                for obj in scene.objects:
+                    if (obj.type in types and obj.type not in exclude_types
+                        and self.object_on_layer(obj, layers)
+                            and not self.object_on_layer(obj, exclude_layers)):
                         obj.select = True
 
                     elif obj.type in exclude_types or self.object_on_layer(obj, exclude_layers):
@@ -82,14 +84,16 @@ class BlenderSceneW(BlenderScene):
                             and not self.object_on_layer(obj, exclude_layers)):
                         obj.select = False
 
-            else:
+            elif len(objects) > 0:
                 for obj in scene.objects:
                     if obj in objects:
                         obj.select = False
 
-                    elif (obj.type in types and obj.type not in exclude_types
-                          and self.object_on_layer(obj, layers)
-                          and not self.object_on_layer(obj, exclude_layers)):
+            else:
+                for obj in scene.objects:
+                    if (obj.type in types and obj.type not in exclude_types
+                        and self.object_on_layer(obj, layers)
+                            and not self.object_on_layer(obj, exclude_layers)):
                         obj.select = False
 
         else:
