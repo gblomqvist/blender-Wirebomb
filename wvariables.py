@@ -15,3 +15,5 @@ wire_freestyle = None
 wire_modifier_mat = None
 wire_bi_mat = None
 clay_mat = None
+wire_mat_set = None
+clay_mat_set = None

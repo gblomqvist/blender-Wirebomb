@@ -157,14 +157,14 @@ bpy.types.Scene.ColorWire = bpy.props.FloatVectorProperty(subtype='COLOR',
                                                           min=0,
                                                           max=1,
                                                           size=4,
-                                                          default=(0.0668754, 1, 0.0876097, 0.8),
+                                                          default=(0, 1, 0.977, 0.8),
                                                           update=update_color_wire,
                                                           description="Wire color (changes real-time)")
 
 bpy.types.Scene.ColorClay = bpy.props.FloatVectorProperty(subtype='COLOR',
                                                           min=0, max=1,
                                                           size=4,
-                                                          default=(0, 0.249135, 0.068232, 1),
+                                                          default=(0, 0.154, 0.255, 1),
                                                           update=update_color_clay,
                                                           description="Clay color (changes real-time)")
 
@@ -243,12 +243,9 @@ class WireframePanel(bpy.types.Panel):
         row.prop(context.scene, property='CheckboxComp', text='Composited wires')
 
         if (bpy.context.scene.WireframeType == 'WIREFRAME_FREESTYLE'
-                and list(bpy.context.scene.LayersAffected) != [False, ] * 20
-                and list(bpy.context.scene.LayersOther) != [False, ] * 20):
-            row.enabled = True
-
-        else:
-            row.enabled = False
+                and any(list(bpy.context.scene.LayersAffected))
+                and any(list(bpy.context.scene.LayersOther))):
+            row.active = True
 
         layout.separator()
 
@@ -259,7 +256,7 @@ class WireframePanel(bpy.types.Panel):
         row.prop(context.scene, property='CheckboxNewScene', text='New scene/s')
 
         if bpy.context.scene.WireframeType == 'WIREFRAME_BI':
-            row.enabled = False
+            row.active = False
 
         row = box.row()
         row.prop(context.scene, property='CheckboxClearRLayers', text='Clear render layers')
@@ -272,7 +269,6 @@ class WireframePanel(bpy.types.Panel):
 
         else:
             wvariables.error_1 = False
-            row.alert = False
 
         row.prop(context.scene, property='CheckboxOnlySelected', text='Only selected')
 
@@ -284,6 +280,7 @@ class WireframePanel(bpy.types.Panel):
 
         row = box.row()
         row.prop(context.scene, property='CheckboxOnlyClay', text='Only clay')
+
         if bpy.context.scene.CheckboxUseClay is not True:
             row.active = False
         # background box END
@@ -294,15 +291,16 @@ class WireframePanel(bpy.types.Panel):
         row.label(text='Wires:')
         row = layout.row()
         row.prop(context.scene, property='ColorWire', text='')
-        row = layout.row()
-        row.prop(context.scene, property='CheckboxUseMatWire', text='Material from scene:')
+        row_matwirecheck = layout.row()
+
+        if bpy.context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
+            row_matwirecheck.active = False
+
+        row_matwirecheck.prop(context.scene, property='CheckboxUseMatWire', text='Material from scene:')
         row_matwire = layout.row()
         row_matwire.prop(context.scene.Materials, property='mat_wire', text='')
 
-        if bpy.context.scene.CheckboxUseMatWire:
-            row_matwire.active = True
-
-        else:
+        if not bpy.context.scene.CheckboxUseMatWire or not row_matwirecheck.active:
             row_matwire.active = False
 
         layout.box()
@@ -311,15 +309,12 @@ class WireframePanel(bpy.types.Panel):
         row.label(text='Clay:')
         row = layout.row()
         row.prop(context.scene, property='ColorClay', text='')
-        row = layout.row()
-        row.prop(context.scene, property='CheckboxUseMatClay', text='Material from scene:')
+        row_matclaycheck = layout.row()
+        row_matclaycheck.prop(context.scene, property='CheckboxUseMatClay', text='Material from scene:')
         row_matclay = layout.row()
         row_matclay.prop(context.scene.Materials, property='mat_clay', text='')
 
-        if bpy.context.scene.CheckboxUseMatClay:
-            row_matclay.active = True
-
-        else:
+        if not bpy.context.scene.CheckboxUseMatClay or not row_matclaycheck.active:
             row_matclay.active = False
 
         layout.box()

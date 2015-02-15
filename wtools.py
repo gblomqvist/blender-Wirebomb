@@ -179,7 +179,7 @@ def add_clay_mat_to_selected(scene_instance):
     scene = scene_instance.set_as_active()
 
     if bpy.context.scene.CheckboxUseMatClay:
-        clay_mat = bpy.data.materials[bpy.context.scene.Materials.mat_clay]
+        clay_mat = wvariables.clay_mat_set
 
     else:
         clay_color = wvariables.original_scene.ColorClay
@@ -259,7 +259,7 @@ def add_wireframe_bi_to_selected(scene_instance):
     scene_instance.set_as_active()
 
     if bpy.context.scene.CheckboxUseMatWire:
-        wireframe_mat = bpy.data.materials[bpy.context.scene.Materials.mat_wire]
+        wireframe_mat = wvariables.wire_mat_set
 
     else:
         wire_color = wvariables.original_scene.ColorWire
@@ -294,7 +294,7 @@ def add_wireframe_modifier(scene_instance):
     scene = scene_instance.set_as_active()
 
     if bpy.context.scene.CheckboxUseMatWire:
-        wireframe_mat = bpy.data.materials[bpy.context.scene.Materials.mat_wire]
+        wireframe_mat = wvariables.wire_mat_set
 
     else:
         wire_color = wvariables.original_scene.ColorWire
@@ -374,7 +374,6 @@ def add_wireframe_freestyle(scene_instance):
 
     scene.render.use_freestyle = True
 
-    BlenderSceneW.select(scene_instance, 'DESELECT', ['ALL'])
     scene.render.layers.active = scene.render.layers[wvariables.rlname]
 
     for n in scene.render.layers.active.freestyle_settings.linesets:
