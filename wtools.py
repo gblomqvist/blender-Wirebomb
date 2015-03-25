@@ -484,19 +484,19 @@ def set_layers_affected():
                 layers_affected = btools.add_layerlists(layers_affected, obj.layers)
 
     else:
-        layers_affected = wvariables.original_scene.LayersAffected
+        layers_affected = list(wvariables.original_scene.LayersAffected)
 
     return layers_affected
 
 
 def set_layers_other():
-    """Sets all layers who will be included in the render layer-just as they are-in a list.
+    """Sets all layers who will be included in the render layer just as they are in a list.
 
     Returns:
         A list with booleans representing all the layers that will be included in the render layer-just as they are.
     """
-    layers_other = [False, ]*20
-
+    layers_other = list(wvariables.original_scene.LayersOther)
+    
     for index in range(0, 20):
         if layers_other[index] and wvariables.original_scene.LayersAffected[index]:
             layers_other[index] = False

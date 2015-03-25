@@ -38,6 +38,10 @@ class WireframeOperator(bpy.types.Operator):
             self.error_msg = "No layers are selected!"
             self.success = False
 
+        elif bpy.context.scene.CheckboxNewScene and len(bpy.context.scene.name) > 47:
+            self.error_msg = "Scene name is too long!"
+            self.success = False
+
         else:
             wvariables.rlname = None
             wvariables.rlname_2 = None
@@ -116,7 +120,7 @@ class WireframeOperator(bpy.types.Operator):
             clay_scene = BlenderSceneW(wvariables.original_scene, bpy.context.scene.CheckboxNewScene, 'clay', 'CYCLES')
 
         clay_scene.set_as_active()
-
+        
         if wvariables.original_scene.CheckboxOnlySelected:
             wvariables.only_selected = clay_scene.selected_objects_to_list(['MESH'])
 
@@ -133,7 +137,7 @@ class WireframeOperator(bpy.types.Operator):
         if wvariables.original_scene.CheckboxUseAO:
             wtools.set_up_world_ao(clay_scene)
 
-        wire_scene.select('DESELECT', ['ALL'])
+        clay_scene.select('DESELECT', ['ALL'])
 
     @staticmethod
     def create_wireframe_scene_freestyle():

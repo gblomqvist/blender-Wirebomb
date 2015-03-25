@@ -3,7 +3,7 @@ bl_info = {
     "author": "Gustaf Blomqvist",
     "version": (1, 0, 0),
     "blender": (2, 73, 0),
-    "location": "Sweden",
+    "location": "3D View --> Toolshelf --> Wireframing",
     "description": "Setting up wireframe renders has never been easier!",
     "warning": "",
     "wiki_url": "",
@@ -46,7 +46,7 @@ def register():
 
 def unregister():
     bpy.utils.unregister_module(__name__)
-    del bpy.types.scene.Materials
+    del bpy.types.Scene.Materials
 
 if __name__ == '__main__':
     register()
@@ -70,31 +70,25 @@ class MaterialSettings(bpy.types.PropertyGroup):
                                       name='Clay material')
 
     mat_wire = bpy.props.EnumProperty(items=scene_materials,
-                                      name='Clay material')
-
-
-class WireMaterials(bpy.types.PropertyGroup):
-
-    mat_wire = bpy.props.EnumProperty(items=scene_materials,
                                       name='Wire material')
 
 
 def update_color_wire(self, context):
     """Updates the real wireframe material's color."""
     try:
-        if bpy.context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
-            wvariables.wire_freestyle.color = bpy.context.scene.ColorWire[0:3]
-            wvariables.wire_freestyle.alpha = bpy.context.scene.ColorWire[-1]
+        if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
+            wvariables.wire_freestyle.color = context.scene.ColorWire[0:3]
+            wvariables.wire_freestyle.alpha = context.scene.ColorWire[-1]
 
-        elif bpy.context.scene.WireframeType == 'WIREFRAME_MODIFIER':
+        elif context.scene.WireframeType == 'WIREFRAME_MODIFIER':
             for node in wvariables.wire_modifier_mat.node_tree.nodes:
                 if node.type == 'BSDF_DIFFUSE':
-                    node.inputs[0].default_value = bpy.context.scene.ColorWire
-            wvariables.wire_modifier_mat.diffuse_color = bpy.context.scene.ColorWire[0:3]
+                    node.inputs[0].default_value = context.scene.ColorWire
+            wvariables.wire_modifier_mat.diffuse_color = context.scene.ColorWire[0:3]
 
-        elif bpy.context.scene.WireframeType == 'WIREFRAME_BI':
-            wvariables.wire_bi_mat.diffuse_color = bpy.context.scene.ColorWire[0:3]
-            wvariables.wire_bi_mat.alpha = bpy.context.scene.ColorWire[-1]
+        elif context.scene.WireframeType == 'WIREFRAME_BI':
+            wvariables.wire_bi_mat.diffuse_color = context.scene.ColorWire[0:3]
+            wvariables.wire_bi_mat.alpha = context.scene.ColorWire[-1]
 
     except AttributeError:
         pass
@@ -105,8 +99,8 @@ def update_color_clay(self, context):
     try:
         for node in wvariables.clay_mat.node_tree.nodes:
             if node.type == 'BSDF_DIFFUSE':
-                node.inputs[0].default_value = bpy.context.scene.ColorClay
-        wvariables.clay_mat.diffuse_color = bpy.context.scene.ColorClay[0:3]
+                node.inputs[0].default_value = context.scene.ColorClay
+        wvariables.clay_mat.diffuse_color = context.scene.ColorClay[0:3]
 
     except AttributeError:
         pass
@@ -114,34 +108,30 @@ def update_color_clay(self, context):
 
 def update_wire_thickness(self, context):
     """Updates the real wireframe's thickness."""
-    try:
-        if bpy.context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
-            wvariables.wire_freestyle.thickness = bpy.context.scene.SliderWireThicknessFreestyle
+    if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
+        wvariables.wire_freestyle.thickness = context.scene.SliderWireThicknessFreestyle
 
-        elif bpy.context.scene.WireframeType == 'WIREFRAME_MODIFIER':
-            for obj in bpy.context.scene.objects:
-                if (obj in wvariables.only_selected
-                        or BlenderSceneW.object_on_layer(bpy.context.scene, obj,
-                                                         wvariables.affected_layers_numbers)):
-                    for modifier in obj.modifiers:
-                        if modifier.type == 'WIREFRAME':
-                            modifier.thickness = bpy.context.scene.SliderWireThicknessModifier
+    elif context.scene.WireframeType == 'WIREFRAME_MODIFIER':
+        for obj in context.scene.objects:
+            if ((context.scene.CheckboxOnlySelected and obj in wvariables.only_selected)
+                    or (not context.scene.CheckboxOnlySelected and 
+                    btools.object_on_layer(context.scene, obj,
+                                           wvariables.affected_layers_numbers))):
+                for modifier in obj.modifiers:
+                    if modifier.type == 'WIREFRAME':
+                        modifier.thickness = context.scene.SliderWireThicknessModifier
 
-    except AttributeError:
-        pass
+#def update_checkboxes(self, context):
 
+#    if context.scene.WireframeType == 'WIREFRAME_BI':
+        #context.scene.CheckboxComp = True
+        #context.scene.CheckboxNewScene = True
 
-def update_checkboxes(self, context):
+#    if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
+        #context.scene.CheckboxComp = False
 
-    if bpy.context.scene.WireframeType == 'WIREFRAME_BI':
-        bpy.context.scene.CheckboxComp = True
-        bpy.context.scene.CheckboxNewScene = True
-
-    if bpy.context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
-        bpy.context.scene.CheckboxComp = False
-
-    if bpy.context.scene.WireframeType == 'WIREFRAME_MODIFIER':
-        bpy.context.scene.CheckboxComp = False
+#    if context.scene.WireframeType == 'WIREFRAME_MODIFIER':
+        #context.scene.CheckboxComp = False
 
 # creates the drop-down list with different wireframe types
 bpy.types.Scene.WireframeType = bpy.props.EnumProperty(
@@ -149,8 +139,7 @@ bpy.types.Scene.WireframeType = bpy.props.EnumProperty(
            ('WIREFRAME_FREESTYLE', 'Freestyle', 'Create wireframe using cycles freestyle renderer'),
            ('WIREFRAME_BI', 'Blender Internal', 'Create wireframe using blender\'s internal renderer')],
     name='Wireframe methods',
-    default='WIREFRAME_FREESTYLE',
-    update=update_checkboxes)
+    default='WIREFRAME_FREESTYLE')
 
 # creates the two color pickers
 bpy.types.Scene.ColorWire = bpy.props.FloatVectorProperty(subtype='COLOR',
@@ -221,8 +210,8 @@ bpy.types.Scene.SliderWireThicknessModifier = bpy.props.FloatProperty(name='Wire
 class WireframePanel(bpy.types.Panel):
     """The panel in the GUI."""
 
-    bl_label = "Set up Wireframe"
-    bl_idname = 'create_wireframe'
+    bl_label = 'Set up Wireframe'
+    bl_idname = 'wireframe_panel'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
     bl_context = 'objectmode'
@@ -242,10 +231,10 @@ class WireframePanel(bpy.types.Panel):
         row = layout.row()
         row.prop(context.scene, property='CheckboxComp', text='Composited wires')
 
-        if (bpy.context.scene.WireframeType == 'WIREFRAME_FREESTYLE'
-                and any(list(bpy.context.scene.LayersAffected))
-                and any(list(bpy.context.scene.LayersOther))):
-            row.active = True
+        if not (context.scene.WireframeType == 'WIREFRAME_FREESTYLE'
+                and any(list(context.scene.LayersAffected))
+                and any(list(context.scene.LayersOther))):
+            row.active = False
 
         layout.separator()
 
@@ -255,7 +244,7 @@ class WireframePanel(bpy.types.Panel):
         row = box.row()
         row.prop(context.scene, property='CheckboxNewScene', text='New scene/s')
 
-        if bpy.context.scene.WireframeType == 'WIREFRAME_BI':
+        if context.scene.WireframeType == 'WIREFRAME_BI':
             row.active = False
 
         row = box.row()
@@ -263,8 +252,8 @@ class WireframePanel(bpy.types.Panel):
 
         row = box.row()
 
-        if (wvariables.error_1 and bpy.context.scene.CheckboxOnlySelected
-                and not btools.check_any_selected(bpy.context.scene, ['MESH'])):
+        if (wvariables.error_1 and context.scene.CheckboxOnlySelected
+                and not btools.check_any_selected(context.scene, ['MESH'])):
             row.alert = True
 
         else:
@@ -281,7 +270,7 @@ class WireframePanel(bpy.types.Panel):
         row = box.row()
         row.prop(context.scene, property='CheckboxOnlyClay', text='Only clay')
 
-        if bpy.context.scene.CheckboxUseClay is not True:
+        if context.scene.CheckboxUseClay is not True:
             row.active = False
         # background box END
 
@@ -293,14 +282,14 @@ class WireframePanel(bpy.types.Panel):
         row.prop(context.scene, property='ColorWire', text='')
         row_matwirecheck = layout.row()
 
-        if bpy.context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
+        if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
             row_matwirecheck.active = False
 
         row_matwirecheck.prop(context.scene, property='CheckboxUseMatWire', text='Material from scene:')
         row_matwire = layout.row()
         row_matwire.prop(context.scene.Materials, property='mat_wire', text='')
 
-        if not bpy.context.scene.CheckboxUseMatWire or not row_matwirecheck.active:
+        if not context.scene.CheckboxUseMatWire or not row_matwirecheck.active:
             row_matwire.active = False
 
         layout.box()
@@ -314,7 +303,7 @@ class WireframePanel(bpy.types.Panel):
         row_matclay = layout.row()
         row_matclay.prop(context.scene.Materials, property='mat_clay', text='')
 
-        if not bpy.context.scene.CheckboxUseMatClay or not row_matclaycheck.active:
+        if not context.scene.CheckboxUseMatClay or not row_matclaycheck.active:
             row_matclay.active = False
 
         layout.box()
@@ -322,10 +311,10 @@ class WireframePanel(bpy.types.Panel):
 
         row = layout.row()
 
-        if bpy.context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
+        if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
             row.prop(context.scene, property='SliderWireThicknessFreestyle', text='Wire thickness')
 
-        elif bpy.context.scene.WireframeType == 'WIREFRAME_MODIFIER':
+        elif context.scene.WireframeType == 'WIREFRAME_MODIFIER':
             row.prop(context.scene, property='SliderWireThicknessModifier', text='Wire thickness')
 
         layout.separator()
@@ -341,7 +330,7 @@ class WireframePanel(bpy.types.Panel):
 
         col.prop(context.scene, property='LayersAffected', text='')
 
-        if bpy.context.scene.CheckboxOnlySelected:
+        if context.scene.CheckboxOnlySelected:
             col.active = False
             row.active = False
 
@@ -361,7 +350,7 @@ class WireframePanel(bpy.types.Panel):
         row = layout.row()
 
         row.scale_y = 1.3
-        row.operator(operator='wireframe_op.create_wireframe', text='Work', icon='WIRE')
+        row.operator(operator='wireframe_op.create_wireframe', text='Set up new', icon='WIRE')
 
         row = layout.row()
         row.operator(operator='wireframe_op.clear_wireframes', text='Quick remove', icon='CANCEL')

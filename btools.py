@@ -2,6 +2,26 @@
 import bpy
 
 
+def object_on_layer(scene, obj, layer_numbers):
+        """Checks if an object is on any of the layers represented by layer_numbers.
+
+        Args:
+            scene: The scene it will look in.
+            obj: The object it will check.
+            layer_numbers: A list consisiting of integers representing the layers that it will check
+                if the object is on.
+
+        Returns:
+            True if the object is on any of the layers represented by layer_numbers, else False.
+        """
+        if obj in [e for e in scene.objects]:
+            for n in layer_numbers:
+                if obj.layers[n]:
+                    return True
+
+        return False
+
+
 def check_any_selected(scene, object_types=None):
     """Checks the scene if any object is selected.
 

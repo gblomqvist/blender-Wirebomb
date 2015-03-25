@@ -170,9 +170,11 @@ class BlenderSceneW(BlenderScene):
                     and wvariables.original_scene.WireframeType == 'WIREFRAME_FREESTYLE'):
                 if wvariables.other_layers_numbers is not None:
                     if i in wvariables.other_layers_numbers:
+                        scene.render.layers[rlname].layers_zmask[i] = True
                         scene.render.layers[rlname_other].layers[i] = True
 
                     else:
+                        scene.render.layers[rlname].layers_zmask[i] = False
                         scene.render.layers[rlname_other].layers[i] = False
 
                 if wvariables.affected_layers_numbers is not None:
@@ -183,13 +185,20 @@ class BlenderSceneW(BlenderScene):
                     else:
                         scene.render.layers[rlname_other].layers_zmask[i] = False
                         scene.render.layers[rlname].layers[i] = False
+            else:
+                if include_layers is not None:
+                    if i in include_layers:
+                        scene.render.layers[rlname].layers[i] = True
 
-            if include_layers is not None:
-                if i in include_layers:
-                    scene.render.layers[rlname].layers[i] = True
+                    else:
+                        scene.render.layers[rlname].layers[i] = False
 
-                else:
-                    scene.render.layers[rlname].layers[i] = False
+                if mask_layers is not None:
+                    if i in mask_layers:
+                        scene.render.layers[rlname].layers_zmask[i] = True
+
+                    else:
+                        scene.render.layers[rlname].layers_zmask[i] = False
 
             if visible_layers is not None:
                 if i in visible_layers:
@@ -197,10 +206,3 @@ class BlenderSceneW(BlenderScene):
 
                 else:
                     scene.layers[i] = False
-
-            if mask_layers is not None:
-                if i in mask_layers:
-                    scene.render.layers[rlname].layers_zmask[i] = True
-
-                else:
-                    scene.render.layers[rlname].layers_zmask[i] = False

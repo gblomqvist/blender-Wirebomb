@@ -40,7 +40,6 @@ class BlenderScene():
 
         # builds the new scene's name
         name = '{}_{}'.format(scene.name, new_name)
-
         bpy.ops.scene.new(type='FULL_COPY')
         bpy.context.scene.name = name
         bpy.data.scenes[name].render.engine = renderer
@@ -92,6 +91,25 @@ class BlenderScene():
             for n in layer_numbers:
                 if obj.layers[n]:
                     return True
+
+        return False
+
+    def check_any_selected(self, object_types=None):
+        """Checks the scene if any object is selected.
+
+        Args:
+            object_types: An optional list consisting of strings representing the object type(s)
+                that the object is allowed to be. If none specified, all types count.
+        """
+        scene = self.set_as_active()
+
+        if object_types is None:
+            object_types = ['MESH', 'CURVE', 'SURFACE', 'META', 'FONT', 'ARMATURE',
+                            'LATTICE', 'EMPTY', 'CAMERA', 'LAMP', 'SPEAKER']
+
+        for obj in scene.objects:
+            if obj.type in object_types and obj.select is True:
+                return True
 
         return False
 
