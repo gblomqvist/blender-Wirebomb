@@ -121,18 +121,6 @@ def update_wire_thickness(self, context):
                     if modifier.type == 'WIREFRAME':
                         modifier.thickness = context.scene.SliderWireThicknessModifier
 
-#def update_checkboxes(self, context):
-
-#    if context.scene.WireframeType == 'WIREFRAME_BI':
-        #context.scene.CheckboxComp = True
-        #context.scene.CheckboxNewScene = True
-
-#    if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
-        #context.scene.CheckboxComp = False
-
-#    if context.scene.WireframeType == 'WIREFRAME_MODIFIER':
-        #context.scene.CheckboxComp = False
-
 # creates the drop-down list with different wireframe types
 bpy.types.Scene.WireframeType = bpy.props.EnumProperty(
     items=[('WIREFRAME_MODIFIER', 'Modifier', 'Create wireframe using cycles and the wireframe modifier'),
@@ -211,20 +199,26 @@ bpy.types.Scene.SliderWireThicknessModifier = bpy.props.FloatProperty(name='Wire
 bpy.types.Scene.CustomSceneName = bpy.props.StringProperty(description='Use a custom made scene name',
                                                            default='over_9000_tris',
                                                            maxlen=47)
+bpy.types.Scene.CustomSceneName2 = bpy.props.StringProperty(description='Use a custom made scene name',
+                                                            default='over_9000_power',
+                                                            maxlen=47)
+
 
 class WireframePanel(bpy.types.Panel):
     """The panel in the GUI."""
 
-    bl_label = 'Set up Wireframe'
+    bl_label = 'Set Up Wireframe'
     bl_idname = 'wireframe_panel'
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
-    bl_context = 'objectmode'
-    bl_category = 'Wireframing'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+
+    def draw_header(self, context):
+        layout = self.layout
+        layout.label(text='', icon='WIRE')
 
     # draws the GUI
     def draw(self, context):
-
         layout = self.layout
 
         row = layout.row()
@@ -233,24 +227,22 @@ class WireframePanel(bpy.types.Panel):
         row = layout.row()
         row.prop(context.scene, property='WireframeType', text='')
 
-        row = layout.row()
-        row.prop(context.scene, property='CheckboxComp', text='Composited wires')
-
-        if not (context.scene.WireframeType == 'WIREFRAME_FREESTYLE'
-                and any(list(context.scene.LayersAffected))
-                and any(list(context.scene.LayersOther))):
-            row.active = False
-
         layout.separator()
-
         # background box START
         box = layout.box()
+
+        if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
+            row_checkcomp = box.row()
+            row_checkcomp.prop(context.scene, property='CheckboxComp', text='Composited wires')
+
+            if not (any(list(context.scene.LayersAffected)) and any(list(context.scene.LayersOther))):
+                row_checkcomp.active = False
 
         row = box.row()
         row.prop(context.scene, property='CheckboxNewScene', text='New scene/s')
 
         if context.scene.WireframeType == 'WIREFRAME_BI':
-            row.active = False
+            row.enabled = False
 
         row = box.row()
         row.prop(context.scene, property='CheckboxClearRLayers', text='Clear render layers')
@@ -297,20 +289,20 @@ class WireframePanel(bpy.types.Panel):
         if not context.scene.CheckboxUseMatWire:
             row_matwire.active = False
 
-        layout.box()
+        if context.scene.CheckboxUseClay:
+            layout.box()
 
-        row = layout.row()
-        row.label(text='Clay:')
-        row = layout.row()
-        row.prop(context.scene, property='ColorClay', text='')
-        row_matclaycheck = layout.row()
-        row_matclaycheck.prop(context.scene, property='CheckboxUseMatClay', text='Material from scene:')
-        row_matclay = layout.row()
-        row_matclay.prop(context.scene.Materials, property='mat_clay', text='')
+            row = layout.row()
+            row.label(text='Clay:')
+            row = layout.row()
+            row.prop(context.scene, property='ColorClay', text='')
+            row_matclaycheck = layout.row()
+            row_matclaycheck.prop(context.scene, property='CheckboxUseMatClay', text='Material from scene:')
+            row_matclay = layout.row()
+            row_matclay.prop(context.scene.Materials, property='mat_clay', text='')
 
-        if not context.scene.CheckboxUseClay:
-            row_matclaycheck.active = False
-            row_matclay.active = False
+            if not context.scene.CheckboxUseMatClay:
+                row_matclay.active = False
 
         layout.box()
         layout.separator()
@@ -354,11 +346,24 @@ class WireframePanel(bpy.types.Panel):
         layout.box()
         layout.separator()
 
-        row = layout.row()
-        row.label('Scene name:')
+        row_field1 = layout.row()
 
         row = layout.row()
         row.prop(context.scene, property='CustomSceneName', text='')
+
+        if (context.scene.WireframeType == 'WIREFRAME_BI' or
+                (context.scene.WireframeType == 'WIREFRAME_FREESTYLE'
+                 and (any(list(context.scene.LayersAffected)) and any(list(context.scene.LayersOther)))
+                 and context.scene.CheckboxComp)):
+            row = layout.row()
+            row_field1.label('Wire scene name:')
+            row.label('Clay scene name:')
+
+            row = layout.row()
+            row.prop(context.scene, property='CustomSceneName2', text='')
+
+        else:
+            row_field1.label('Scene name:')
 
         layout.box()
         layout.separator()
@@ -366,7 +371,7 @@ class WireframePanel(bpy.types.Panel):
         row = layout.row()
 
         row.scale_y = 1.3
-        row.operator(operator='wireframe_op.create_wireframe', text='Set up new', icon='WIRE')
+        row.operator(operator='wireframe_op.create_wireframe', text='Set up', icon='WIRE')
 
         row = layout.row()
         row.operator(operator='wireframe_op.clear_wireframes', text='Quick remove', icon='CANCEL')
