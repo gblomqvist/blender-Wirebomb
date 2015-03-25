@@ -167,23 +167,25 @@ bpy.types.Scene.LayersOther = bpy.props.BoolVectorProperty(subtype='LAYER',
                                                            default=(False,) * 20,
                                                            description="Layers whose objects will be "
                                                                        "included as is, e.g. lights")
-
 # creates all the checkboxes
 bpy.types.Scene.CheckboxComp = bpy.props.BoolProperty(default=False,
                                                       description="Add the wires through composition")
-bpy.types.Scene.CheckboxNewScene = bpy.props.BoolProperty(default=True, description="Create a new scene")
+bpy.types.Scene.CheckboxNewScene = bpy.props.BoolProperty(default=True,
+                                                          description="Create a new scene")
 bpy.types.Scene.CheckboxOnlySelected = bpy.props.BoolProperty(default=False,
                                                               description="Only affect the selected meshes")
 bpy.types.Scene.CheckboxUseAO = bpy.props.BoolProperty(default=False,
                                                        description="Use ambient occlusion lighting setup")
 bpy.types.Scene.CheckboxClearRLayers = bpy.props.BoolProperty(default=True,
                                                               description="Remove all previous render layers")
-bpy.types.Scene.CheckboxUseClay = bpy.props.BoolProperty(default=True, description="Activate the use of clay")
-bpy.types.Scene.CheckboxOnlyClay = bpy.props.BoolProperty(default=False, description="Only use clay, no wires")
-bpy.types.Scene.CheckboxUseMatWire = bpy.props.BoolProperty(default=False, description="Use material from scene "
-                                                                                        "as wire material")
-bpy.types.Scene.CheckboxUseMatClay = bpy.props.BoolProperty(default=False, description="Use material from scene "
-                                                                                       "as clay material")
+bpy.types.Scene.CheckboxUseClay = bpy.props.BoolProperty(default=True,
+                                                         description="Activate the use of clay")
+bpy.types.Scene.CheckboxOnlyClay = bpy.props.BoolProperty(default=False,
+                                                          description="Only use clay, no wires")
+bpy.types.Scene.CheckboxUseMatWire = bpy.props.BoolProperty(default=False,
+                                                            description="Use material from scene as wire material")
+bpy.types.Scene.CheckboxUseMatClay = bpy.props.BoolProperty(default=False,
+                                                            description="Use material from scene as clay material")
 
 # creates the sliders for the wireframe thickness
 bpy.types.Scene.SliderWireThicknessFreestyle = bpy.props.FloatProperty(name='Wire Thickness',
@@ -205,7 +207,10 @@ bpy.types.Scene.SliderWireThicknessModifier = bpy.props.FloatProperty(name='Wire
                                                                       update=update_wire_thickness,
                                                                       description="Wire thickness "
                                                                                   "(changes real-time)")
-
+# creates the custom naming text field
+bpy.types.Scene.CustomSceneName = bpy.props.StringProperty(description='Use a custom made scene name',
+                                                           default='over_9000_tris',
+                                                           maxlen=47)
 
 class WireframePanel(bpy.types.Panel):
     """The panel in the GUI."""
@@ -289,7 +294,7 @@ class WireframePanel(bpy.types.Panel):
         row_matwire = layout.row()
         row_matwire.prop(context.scene.Materials, property='mat_wire', text='')
 
-        if not context.scene.CheckboxUseMatWire or not row_matwirecheck.active:
+        if not context.scene.CheckboxUseMatWire:
             row_matwire.active = False
 
         layout.box()
@@ -303,7 +308,8 @@ class WireframePanel(bpy.types.Panel):
         row_matclay = layout.row()
         row_matclay.prop(context.scene.Materials, property='mat_clay', text='')
 
-        if not context.scene.CheckboxUseMatClay or not row_matclaycheck.active:
+        if not context.scene.CheckboxUseClay:
+            row_matclaycheck.active = False
             row_matclay.active = False
 
         layout.box()
@@ -345,6 +351,16 @@ class WireframePanel(bpy.types.Panel):
 
         col.prop(context.scene, property='LayersOther', text='')
 
+        layout.box()
+        layout.separator()
+
+        row = layout.row()
+        row.label('Scene name:')
+
+        row = layout.row()
+        row.prop(context.scene, property='CustomSceneName', text='')
+
+        layout.box()
         layout.separator()
 
         row = layout.row()
