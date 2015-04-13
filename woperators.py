@@ -214,19 +214,6 @@ class WireframeOperator(bpy.types.Operator):
 
         wire_scene.select('DESELECT', ['ALL'])
 
-class ClearWireframesOperator(bpy.types.Operator):
-    """Remove previously created scenes"""
-    bl_label = "Clear wireframes"
-    bl_idname = 'wireframe_op.clear_wireframes'
-
-    def invoke(self, context, event):
-
-        for scene in bpy.data.scenes:
-            if '_wireframe' in scene.name or '_clay' in scene.name:
-                bpy.data.scenes.remove(scene)
-
-        return {'FINISHED'}
-
 
 class SelectLayersAffectedOperator(bpy.types.Operator):
     """Select all layers"""

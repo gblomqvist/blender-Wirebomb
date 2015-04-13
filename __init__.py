@@ -372,6 +372,3 @@ class WireframePanel(bpy.types.Panel):
 
         row.scale_y = 1.3
         row.operator(operator='wireframe_op.create_wireframe', text='Set up', icon='WIRE')
-
-        row = layout.row()
-        row.operator(operator='wireframe_op.clear_wireframes', text="I'm not currently working", icon='CANCEL')
