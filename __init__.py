@@ -55,11 +55,9 @@ if __name__ == '__main__':
 def scene_materials(scene, context):
 
     mat_list = []
-    counter = 0
 
     for mat in bpy.data.materials:
         mat_list.append((mat.name, mat.name, ''))
-        counter += 1
 
     return mat_list
 
@@ -158,8 +156,8 @@ bpy.types.Scene.LayersOther = bpy.props.BoolVectorProperty(subtype='LAYER',
 # creates all the checkboxes
 bpy.types.Scene.CheckboxComp = bpy.props.BoolProperty(default=False,
                                                       description="Add the wires through composition")
-bpy.types.Scene.CheckboxNewScene = bpy.props.BoolProperty(default=True,
-                                                          description="Create a new scene")
+bpy.types.Scene.CheckboxBackup = bpy.props.BoolProperty(default=True,
+                                                        description="Create a backup scene")
 bpy.types.Scene.CheckboxOnlySelected = bpy.props.BoolProperty(default=False,
                                                               description="Only affect the selected meshes")
 bpy.types.Scene.CheckboxUseAO = bpy.props.BoolProperty(default=False,
@@ -231,7 +229,7 @@ class WireframePanel(bpy.types.Panel):
         col = split.column()
 
         row = col.row()
-        row.prop(context.scene, property='CheckboxNewScene', text='New scene/s')
+        row.prop(context.scene, property='CheckboxBackup', text='Backup scene')
 
         if context.scene.WireframeType == 'WIREFRAME_BI':
             row.enabled = False
@@ -241,7 +239,7 @@ class WireframePanel(bpy.types.Panel):
 
         row = col.row()
 
-        if (wvariables.error_1 and context.scene.CheckboxOnlySelected
+        if (wvariables.error_101 and context.scene.CheckboxOnlySelected
                 and not btools.check_any_selected(context.scene, ['MESH'])):
             row.alert = True
 
@@ -256,7 +254,6 @@ class WireframePanel(bpy.types.Panel):
 
             if not (any(list(context.scene.LayersAffected)) and any(list(context.scene.LayersOther))):
                 row_checkcomp.active = False
-
 
         col = split.column()
 
@@ -281,16 +278,18 @@ class WireframePanel(bpy.types.Panel):
         col = split.column()
 
         row_matwirecheck = col.row()
-
         if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
             row_matwirecheck.active = False
 
+        if wvariables.error_201 and context.scene.CheckboxUseMatWire and len(bpy.data.materials) == 0:
+            row_matwirecheck.alert = True
+        else:
+            wvariables.error_201 = False
         row_matwirecheck.prop(context.scene, property='CheckboxUseMatWire', text='Material from scene:')
 
         col = split.column()
 
         row_matwire = col.row()
-        row_matwire.separator()
         row_matwire.prop(context.scene.Materials, property='mat_wire', text='')
 
         if context.scene.WireframeType == 'WIREFRAME_FREESTYLE' or not context.scene.CheckboxUseMatWire:
@@ -306,12 +305,15 @@ class WireframePanel(bpy.types.Panel):
             col = split.column()
 
             row_matclaycheck = col.row()
+            if wvariables.error_202 and context.scene.CheckboxUseMatClay and len(bpy.data.materials) == 0:
+                row_matclaycheck.alert = True
+            else:
+                wvariables.error_202 = False
             row_matclaycheck.prop(context.scene, property='CheckboxUseMatClay', text='Material from scene:')
 
             col = split.column()
 
             row_matclay = col.row()
-            row_matclay.separator()
             row_matclay.prop(context.scene.Materials, property='mat_clay', text='')
 
             if not context.scene.CheckboxUseMatClay:
@@ -353,16 +355,12 @@ class WireframePanel(bpy.types.Panel):
 
         col.prop(context.scene, property='LayersOther', text='')
 
-        layout.box()
         layout.separator()
 
         row = layout.row()
         row.prop(context.scene, property='CustomSceneName', text='Wire scene name')
 
-        if (context.scene.WireframeType == 'WIREFRAME_BI' or
-                (context.scene.WireframeType == 'WIREFRAME_FREESTYLE'
-                 and (any(list(context.scene.LayersAffected)) and any(list(context.scene.LayersOther)))
-                 and context.scene.CheckboxComp)):
+        if context.scene.WireframeType == 'WIREFRAME_BI':
             row = layout.row()
             row.prop(context.scene, property='CustomSceneName2', text='Clay scene name')
 

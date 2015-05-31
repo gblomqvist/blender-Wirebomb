@@ -361,6 +361,7 @@ class BlenderScene():
         area.type = area_name
 
         self.space_data = area.spaces.active
+        print(self.space_data)
 
     def comp_show_backdrop(self):
         """Activates the backdrop function in the compositor."""

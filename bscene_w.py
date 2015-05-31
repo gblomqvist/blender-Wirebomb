@@ -1,5 +1,7 @@
 from .bscene import BlenderScene
 from . import wvariables
+# noinspection PyUnresolvedReferences
+import bpy
 
 
 class BlenderSceneW(BlenderScene):
@@ -206,3 +208,22 @@ class BlenderSceneW(BlenderScene):
 
                 else:
                     scene.layers[i] = False
+
+    @staticmethod
+    def copy_scene(scene, new_name, renderer='CYCLES'):
+        """Creates a full copy of the scene.
+
+        Args:
+            new_name: A string representing the new scene's name.
+            renderer: A string representing the new scene's render engine, e.g. 'CYCLES'.
+
+        Returns:
+            A string that is the new scene's name.
+        """
+        bpy.context.screen.scene = scene
+
+        bpy.ops.scene.new(type='FULL_COPY')
+        bpy.context.scene.name = new_name
+        bpy.data.scenes[new_name].render.engine = renderer
+
+        return new_name
