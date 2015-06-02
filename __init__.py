@@ -238,14 +238,11 @@ class WireframePanel(bpy.types.Panel):
         row.prop(context.scene, property='CheckboxClearRLayers', text='Clear render layers')
 
         row = col.row()
-
         if (wvariables.error_101 and context.scene.CheckboxOnlySelected
                 and not btools.check_any_selected(context.scene, ['MESH'])):
             row.alert = True
-
         else:
-            wvariables.error_1 = False
-
+            wvariables.error_101 = False
         row.prop(context.scene, property='CheckboxOnlySelected', text='Only selected')
 
         if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
@@ -358,10 +355,18 @@ class WireframePanel(bpy.types.Panel):
         layout.separator()
 
         row = layout.row()
+        if wvariables.error_301 and len(context.scene.CustomSceneName) == 0:
+            row.alert = True
+        else:
+            wvariables.error_301 = False
         row.prop(context.scene, property='CustomSceneName', text='Wire scene name')
 
         if context.scene.WireframeType == 'WIREFRAME_BI':
             row = layout.row()
+            if wvariables.error_302 and len(context.scene.CustomSceneName2) == 0:
+                row.alert = True
+            else:
+                wvariables.error_302 = False
             row.prop(context.scene, property='CustomSceneName2', text='Clay scene name')
 
         layout.separator()

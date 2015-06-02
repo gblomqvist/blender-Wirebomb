@@ -12,9 +12,11 @@ affected_layers_numbers = []
 all_layers_used_numbers = []
 only_selected = []
 
-error_101 = False
-error_201 = False
+error_101 = False  # no mesh selected
+error_201 = False  # no materials in scene
 error_202 = False
+error_301 = False  # no scene name
+error_302 = False
 
 wire_freestyle = None
 wire_modifier_mat = None

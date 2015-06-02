@@ -13,7 +13,7 @@ class WireframeOperator(bpy.types.Operator):
 
     def __init__(self):
 
-        self.success = None
+        self.success = True
         self.error_msg = ""
 
     def execute(self, context):
@@ -30,24 +30,35 @@ class WireframeOperator(bpy.types.Operator):
 
         if (context.scene.CheckboxOnlySelected
                 and not btools.check_any_selected(context.scene, ['MESH'])):
-            self.error_msg = "Checkbox 'Only Selected' is activated but no mesh is selected!"
+            self.error_msg += "- Checkbox 'Only Selected' is activated but no mesh is selected!\n"
             self.success = False
             wvariables.error_101 = True  # used for row alert in __init__.py
 
-        elif not any(list(context.scene.LayersAffected)) and not any(list(context.scene.LayersOther)):
-            self.error_msg = "No layers are selected!"
+        if (not context.scene.CheckboxOnlySelected and
+                not any(list(context.scene.LayersAffected)) and not any(list(context.scene.LayersOther))):
+            self.error_msg += "- No affected layers selected!\n"
             self.success = False
 
-        elif ((context.scene.WireframeType != 'WIREFRAME_FREESTYLE' and context.scene.CheckboxUseMatWire)
-              or context.scene.CheckboxUseMatClay) and len(bpy.data.materials) == 0:
-            self.error_msg = 'No materials in scene!'
+        if ((context.scene.WireframeType != 'WIREFRAME_FREESTYLE' and context.scene.CheckboxUseMatWire)
+                or context.scene.CheckboxUseMatClay) and len(bpy.data.materials) == 0:
+            self.error_msg += '- No materials in scene!\n'
             self.success = False
             if context.scene.CheckboxUseMatWire:
                 wvariables.error_201 = True  # used for row alert in __init__.py
             if context.scene.CheckboxUseMatClay:
                 wvariables.error_202 = True  # used for row alert in __init__.py
 
-        else:
+        if len(context.scene.CustomSceneName) == 0:
+            self.error_msg += '- No wire scene name!\n'
+            self.success = False
+            wvariables.error_301 = True  # used for row alert in __init__.py
+
+        if context.scene.WireframeType == 'WIREFRAME_BI' and len(context.scene.CustomSceneName2) == 0:
+            self.error_msg += '- No clay scene name!\n'
+            self.success = False
+            wvariables.error_302 = True  # used for row alert in __init__.py
+
+        if self.success:
             wvariables.rlname = None
             wvariables.rlname_2 = None
             wvariables.s_name_1 = context.scene.CustomSceneName
