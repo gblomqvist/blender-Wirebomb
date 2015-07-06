@@ -2,8 +2,8 @@ rlname = None
 rlname_2 = None
 rlname_other = None
 
-s_name_1 = None
-s_name_2 = None
+scene_name_1 = None
+scene_name_2 = None
 
 original_scene = None
 

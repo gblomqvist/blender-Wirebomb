@@ -2,7 +2,7 @@
 import bpy
 
 
-class BlenderScene():
+class BlenderScene:
     """Contains useful functions and methods for modifying a scene.
 
     Attributes:
@@ -18,7 +18,6 @@ class BlenderScene():
         """
         if new_scene:
             self.name = self.copy_scene(scene, new_name, renderer)
-            self.parent_scene = scene
 
         else:
             self.name = scene.name
@@ -26,7 +25,7 @@ class BlenderScene():
         self.space_data = None
 
     @staticmethod
-    def copy_scene(scene, new_name='', renderer='CYCLES'):
+    def copy_scene(scene, new_name, renderer='CYCLES'):
         """Creates a full copy of the scene.
 
         Args:
@@ -37,14 +36,11 @@ class BlenderScene():
             A string that is the new scene's name.
         """
         bpy.context.screen.scene = scene
-
-        # builds the new scene's name
-        name = '{}_{}'.format(scene.name, new_name)
         bpy.ops.scene.new(type='FULL_COPY')
-        bpy.context.scene.name = name
-        bpy.data.scenes[name].render.engine = renderer
+        bpy.context.screen.scene.name = new_name
+        bpy.data.scenes[new_name].render.engine = renderer
 
-        return name
+        return new_name
 
     def set_as_active(self):
         """Sets the scene as active.
@@ -65,10 +61,9 @@ class BlenderScene():
         """
         scene = self.set_as_active()
 
-        if object_types is None:
+        if object_types == ['ALL'] or object_types is None:
             object_types = ['MESH', 'CURVE', 'SURFACE', 'META', 'FONT', 'ARMATURE',
                             'LATTICE', 'EMPTY', 'CAMERA', 'LAMP', 'SPEAKER']
-
         for obj in scene.objects:
             if obj.select is True and obj.type in object_types:
                 scene.objects.active = obj
@@ -113,20 +108,23 @@ class BlenderScene():
 
         return False
 
-    def select(self, types, exclude_types=None, layers=None, exclude_layers=None, objects=None):
+    def select(self, mode, types=None, exclude_types=None, layers=None, exclude_layers=None, objects=None):
         """Selects objects.
 
         Selects objects by object types and layers. It can also select specific objects.
 
         Args:
-            types: A list consisting of strings representing the object types that are to be selected.
+            mode: A string representing the mode, either 'SELECT' to select objects or 'DESELECT' to deselect objects.
+            types: A list consisting of strings representing the object types that are to be selected. If none
+                specified, objects variable needs to be set.
             exclude_types: An optional list consisting of strings representing the object types that are to be
                 deselected, these types will not be included among the select_types.
             layers: An optional list consisting of integers representing the layers whose objects
                 are up for selection.
             exclude_layers: An optional list consisting of integers representing the layers whose objects
                 will be deselected, these layers will not be included among the layer_numbers.
-            objects: An optional list consisting of specific objects that are to be selected.
+            objects: An optional list consisting of specific objects that are to be selected, need to be set if types
+                variable is not set. If set, types variable will not matter.
         """
         scene = self.set_as_active()
         all_layer_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
@@ -151,83 +149,52 @@ class BlenderScene():
         elif exclude_layers == ['ELSE']:
             exclude_layers = [x for x in all_layer_numbers if x not in layers]
 
-        if types == ['ALL'] or types == ['OBJECT']:
-            for obj in scene.objects:
-                if (obj.type not in exclude_types and self.object_on_layer(obj, layers)
-                        and not self.object_on_layer(obj, exclude_layers)):
-                    obj.select = True
+        if mode == 'SELECT':
+            if types == ['ALL']:
+                for obj in scene.objects:
+                    if (obj.type not in exclude_types and self.object_on_layer(obj, layers)
+                            and not self.object_on_layer(obj, exclude_layers)):
+                        obj.select = True
 
-                elif obj.type in exclude_types or self.object_on_layer(obj, exclude_layers):
-                    obj.select = False
+                    elif obj.type in exclude_types or self.object_on_layer(obj, exclude_layers):
+                        obj.select = False
 
-        else:
-            for obj in scene.objects:
-                if obj in objects:
-                    obj.select = True
+            elif len(objects) > 0:
+                for obj in scene.objects:
+                    if obj in objects:
+                        obj.select = True
 
-                elif (obj.type in types and obj.type not in exclude_types
-                      and self.object_on_layer(obj, layers)
-                      and not self.object_on_layer(obj, exclude_layers)):
-                    obj.select = True
+            else:
+                for obj in scene.objects:
+                    if (obj.type in types and obj.type not in exclude_types
+                            and self.object_on_layer(obj, layers)
+                            and not self.object_on_layer(obj, exclude_layers)):
+                        obj.select = True
 
-                elif obj.type in exclude_types or self.object_on_layer(obj, exclude_layers):
-                    obj.select = False
+                    elif obj.type in exclude_types or self.object_on_layer(obj, exclude_layers):
+                        obj.select = False
 
-        self.set_active_object(types)
+        elif mode == 'DESELECT':
+            if types == ['ALL']:
+                for obj in scene.objects:
+                    if (obj.type not in exclude_types and self.object_on_layer(obj, layers)
+                            and not self.object_on_layer(obj, exclude_layers)):
+                        obj.select = False
 
-    def deselect(self, types, exclude_types=None, layers=None, exclude_layers=None, objects=None):
-        """Deselects objects.
+            elif len(objects) > 0:
+                for obj in scene.objects:
+                    if obj in objects:
+                        obj.select = False
 
-        Deselects objects by object types and layers. It can also deselect specific objects.
-
-        Args:
-            types: A list consisting of strings representing the object types that are to be deselected.
-            exclude_types: An optional list consisting of strings representing the object types that are to be
-                deselected, these types will not be included among the select_types.
-            layers: An optional list consisting of integers representing the layers whose objects
-                are up for deselection.
-            exclude_layers: An optional list consisting of integers representing the layers whose objects
-                will be deselected, these layers will not be included among the layer_numbers.
-            objects: An optional list consisting of specific objects that are to be deselected.
-        """
-        scene = self.set_as_active()
-        all_layer_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-        object_types = ['MESH', 'CURVE', 'SURFACE', 'META', 'FONT', 'ARMATURE',
-                        'LATTICE', 'EMPTY', 'CAMERA', 'LAMP', 'SPEAKER']
-
-        if objects is None:
-            objects = []
-
-        if exclude_types is None:
-            exclude_types = []
-
-        elif exclude_types == ['ELSE']:
-            exclude_types = [x for x in object_types if x not in types]
-
-        if layers is None or layers == ['EVERY']:
-            layers = all_layer_numbers
-
-        if exclude_layers is None:
-            exclude_layers = []
-
-        elif exclude_layers == ['ELSE']:
-            exclude_layers = [x for x in all_layer_numbers if x not in layers]
-
-        if types == ['ALL'] or types == ['OBJECT']:
-            for obj in scene.objects:
-                if (obj.type not in exclude_types and self.object_on_layer(obj, layers)
-                        and not self.object_on_layer(obj, exclude_layers)):
-                    obj.select = False
+            else:
+                for obj in scene.objects:
+                    if (obj.type in types and obj.type not in exclude_types
+                        and self.object_on_layer(obj, layers)
+                            and not self.object_on_layer(obj, exclude_layers)):
+                        obj.select = False
 
         else:
-            for obj in scene.objects:
-                if obj in objects:
-                    obj.select = False
-
-                elif (obj.type in types and obj.type not in exclude_types
-                      and self.object_on_layer(obj, layers)
-                      and not self.object_on_layer(obj, exclude_layers)):
-                    obj.select = False
+            return "Error: No such mode as '{}'.".format(mode)
 
         self.set_active_object(types)
 
@@ -253,11 +220,14 @@ class BlenderScene():
         """
         scene = self.set_as_active()
         previous_layers = list(scene.layers)
-
+        previous_area = bpy.context.area.type
+        print(scene)
+        # TODO for operating in viewport it needs to be the active space, check all files for this
+        bpy.context.area.type = 'VIEW_3D'
         bpy.ops.object.duplicate()
         self.move_selected_to_layer(to_layer)
         self.select('DESELECT', ['ALL'], [to_layer])
-
+        bpy.context.area.type = previous_area
         scene.layers = previous_layers
 
     def clear_all_materials(self):
@@ -265,9 +235,8 @@ class BlenderScene():
         scene = self.set_as_active()
         previous_layers = list(scene.layers)
         scene.layers = (True,) * 20
-
         self.select('SELECT', ['MESH'], ['ELSE'])
-        bpy.context.object.data.materials.clear()
+        bpy.context.active_object.data.materials.clear()
         bpy.ops.object.material_slot_copy()
 
         scene.layers = previous_layers
@@ -348,32 +317,26 @@ class BlenderScene():
                 else:
                     scene.render.layers[rlname].layers_zmask[i] = False
 
-    def set_area(self, area_name):
-        """Sets the active screen area.
+    def view3d_pivotpoint(self, action, pivotpoint=None):
+        """Manipulates the 3D view's pivot point by setting it or getting it.
 
         Args:
-            area_name: A string representing the name of the area you want to set, e.g. 'NODE_EDITOR'.
+            action: A string representing the action. Either 'set' to set the pivot point
+                or 'get' to get the current pivot point.
+            pivotpoint: If action equals 'set', this string represents the pivot point you want to set.
+
+        Returns:
+            If action equals 'get', returns a string representing the 3D view's current pivot point.
         """
         self.set_as_active()
+        previous_area = bpy.context.area.type
+        bpy.context.area.type = 'VIEW_3D'
 
-        area = bpy.context.area
-        # sets area
-        area.type = area_name
+        if action == 'set':
+            bpy.context.space_data.pivot_point = pivotpoint
+            bpy.context.area.type = previous_area
 
-        self.space_data = area.spaces.active
-        print(self.space_data)
-
-    def comp_show_backdrop(self):
-        """Activates the backdrop function in the compositor."""
-        self.set_as_active()
-
-        area = bpy.context.area
-        # saves the current area
-        previous_area = area.type
-
-        # change area and activate backdrop
-        self.set_area('NODE_EDITOR')
-        self.space_data.show_backdrop = True
-
-        # changes back to the previous area
-        area.type = previous_area
+        elif action == 'get':
+            pivotpoint = bpy.context.space_data.pivot_point
+            bpy.context.area.type = previous_area
+            return pivotpoint

@@ -23,7 +23,7 @@ def object_on_layer(scene, obj, layer_numbers):
 
 
 def check_any_selected(scene, object_types=None):
-    """Checks the scene if any object is selected.
+    """Checks the scene for if any object is selected.
 
     Args:
         scene: The scene to be checked.
@@ -90,27 +90,41 @@ def find_material_index(obj, material):
     return mat_index
 
 
-def add_layerlists(list1, list2):
-    """Combines two layer lists into one.
+def manipulate_layerlists(mode, list1, list2):
+    """Adds or subtracts two layer lists.
+
+    If mode equals 'subtract' it subtracts list2 from list1.
 
     Example:
-        >>> print(add_layerlists([False, True, True, False], [True, True, False, False]))
+        >>> print(manipulate_layerlists('add', [False, True, True, False], [True, True, False, False]))
         [True, True, True, False]
+        >>> print(manipulate_layerlists('subtract', [False, True, True, False], [True, True, False, False]))
+        [False, False, True, False]
 
     Args:
+        mode: A string, either 'add' to add the lists or 'subtract' to subtract them.
         list1: One of the layer lists you want to combine.
         list2: The other one of the layer lists you want to combine.
 
     Returns:
         The combined layer list.
     """
-    added_layers = []
+    layers = []
 
-    for i in range(20):
-        if list1[i] is True or list2[i] is True:
-            added_layers.append(True)
+    if mode == 'add':
+        for i in range(20):
+            if list1[i] is True or list2[i] is True:
+                layers.append(True)
 
-        else:
-            added_layers.append(False)
+            else:
+                layers.append(False)
 
-    return added_layers
+    elif mode == 'subtract':
+        for i in range(20):
+            if list1[i] is True and list2[i] is True:
+                layers.append(False)
+
+            else:
+                layers.append(list1[i])
+
+    return layers
