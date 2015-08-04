@@ -2,29 +2,31 @@
 import bpy
 from .b_scene import BlenderScene
 from . import b_tools
-from . import w_variables
+from . import w_var
 
 
 class BlenderSceneW(BlenderScene):
     """A version of the class BlenderScene that is specific for this add-on."""
 
-    def select(self, mode, types=None, exclude_types=None, layers=None, exclude_layers=None, objects=None):
-        """Selects or deselects objects, a special version of BlenderScene's select and deselect functions.
+    def select(self, mode, types=None, types_excluded=None, layers=None, layers_excluded=None, objects=None):
+        """Selects or deselects objects, a special version of BlenderScene's select function.
 
-        Selects/deselects specific objects or objects by object types and layers.
+        (De)selects specific objects or objects by object types and layers.
 
         Args:
             mode: A string representing the mode, either 'SELECT' to select objects or 'DESELECT' to deselect objects.
-            types: An optional list consisting of strings representing the object types that are to be selected. If none
-                specified, objects variable needs to be set.
-            exclude_types: An optional list consisting of strings representing the object types that are to be
-                deselected, these types will not be included among the select_types.
+            types: An optional list consisting of strings representing the object types that are to be (de)selected.
+                If none specified, objects variable needs to be set.
+            types_excluded: An optional list consisting of strings representing the object types that are to be
+                deselected or left out if mode is set to 'DESELECT', these types will not be included among the
+                select_types.
             layers: An optional list consisting of integers representing the layers whose objects
-                are up for selection.
-            exclude_layers: An optional list consisting of integers representing the layers whose objects
-                will be deselected, these layers will not be included among the layer_numbers.
-            objects: An optional list consisting of specific objects that are to be selected, need to be set if types
-                variable is not set. If set, types variable will not matter.
+                are up for (de)selection.
+            layers_excluded: An optional list consisting of integers representing the layers whose objects
+                will be deselected or left out if mode is set to 'DESELECT', these layers will not be included among
+                the layer_numbers.
+            objects: An optional list consisting of specific objects that are to be (de)selected, need to be set if
+                types variable is not set. If set, types variable will not matter.
         """
         scene = self.set_as_active()
         all_layer_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
@@ -35,7 +37,7 @@ class BlenderSceneW(BlenderScene):
 
         if layers is None:
             if types != ['ALL']:
-                layers = w_variables.affected_layers_numbers
+                layers = w_var.affected_layers_numbers
 
             else:
                 layers = all_layer_numbers
@@ -43,23 +45,23 @@ class BlenderSceneW(BlenderScene):
         elif layers == ['EVERY']:
             layers = all_layer_numbers
 
-        if w_variables.original_scene.CheckboxOnlySelected:
-            objects = w_variables.only_selected
+        if w_var.cb_only_selected:
+            objects = w_var.only_selected
 
         elif objects is None:
             objects = []
 
-        if exclude_types is None:
-            exclude_types = []
+        if types_excluded is None:
+            types_excluded = []
 
-        elif exclude_types == ['ELSE']:
-            exclude_types = [x for x in object_types if x not in types]
+        elif types_excluded == ['ELSE']:
+            types_excluded = [x for x in object_types if x not in types]
 
-        if exclude_layers is None:
-            exclude_layers = []
+        if layers_excluded is None:
+            layers_excluded = []
 
-        elif exclude_layers == ['ELSE']:
-            exclude_layers = [x for x in all_layer_numbers if x not in layers]
+        elif layers_excluded == ['ELSE']:
+            layers_excluded = [x for x in all_layer_numbers if x not in layers]
 
         previous_area = bpy.context.area.type
         # need 3D view space to change object select property
@@ -68,11 +70,11 @@ class BlenderSceneW(BlenderScene):
         if mode == 'SELECT':
             if types == ['ALL']:
                 for obj in scene.objects:
-                    if (obj.type not in exclude_types and self.object_on_layer(obj, layers)
-                            and not self.object_on_layer(obj, exclude_layers)):
+                    if (obj.type not in types_excluded and self.object_on_layer(obj, layers)
+                            and not self.object_on_layer(obj, layers_excluded)):
                         obj.select = True
 
-                    elif obj.type in exclude_types or self.object_on_layer(obj, exclude_layers):
+                    elif obj.type in types_excluded or self.object_on_layer(obj, layers_excluded):
                         obj.select = False
 
             elif len(objects) > 0:
@@ -82,18 +84,18 @@ class BlenderSceneW(BlenderScene):
 
             else:
                 for obj in scene.objects:
-                    if (obj.type in types and obj.type not in exclude_types
+                    if (obj.type in types and obj.type not in types_excluded
                             and self.object_on_layer(obj, layers)
-                            and not self.object_on_layer(obj, exclude_layers)):
+                            and not self.object_on_layer(obj, layers_excluded)):
                         obj.select = True
-                    elif obj.type in exclude_types or self.object_on_layer(obj, exclude_layers):
+                    elif obj.type in types_excluded or self.object_on_layer(obj, layers_excluded):
                         obj.select = False
 
         elif mode == 'DESELECT':
             if types == ['ALL']:
                 for obj in scene.objects:
-                    if (obj.type not in exclude_types and self.object_on_layer(obj, layers)
-                            and not self.object_on_layer(obj, exclude_layers)):
+                    if (obj.type not in types_excluded and self.object_on_layer(obj, layers)
+                            and not self.object_on_layer(obj, layers_excluded)):
                         obj.select = False
 
             elif len(objects) > 0:
@@ -103,9 +105,9 @@ class BlenderSceneW(BlenderScene):
 
             else:
                 for obj in scene.objects:
-                    if (obj.type in types and obj.type not in exclude_types
+                    if (obj.type in types and obj.type not in types_excluded
                         and self.object_on_layer(obj, layers)
-                            and not self.object_on_layer(obj, exclude_layers)):
+                            and not self.object_on_layer(obj, layers_excluded)):
                         obj.select = False
 
         else:
@@ -133,15 +135,15 @@ class BlenderSceneW(BlenderScene):
         layer_numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
 
         if visible_layers is None:
-            visible_layers = w_variables.all_layers_used_numbers
+            visible_layers = w_var.all_layers_used_numbers
 
         if include_layers is None:
-            include_layers = w_variables.all_layers_used_numbers
+            include_layers = w_var.all_layers_used_numbers
 
         if mask_layers is None:
             mask_layers = []
 
-        if w_variables.original_scene.CheckboxClearRLayers:
+        if w_var.cb_clear_rlayers:
             for layer in scene.render.layers[0:len(scene.render.layers)-1]:
                 scene.render.layers.remove(layer)
 
@@ -158,31 +160,28 @@ class BlenderSceneW(BlenderScene):
             new_rlayer = scene.render.layers.new(rlname)
             scene.render.layers.active = new_rlayer
 
-        if w_variables.rlname is None:
-            w_variables.rlname = new_rlayer.name
+        if w_var.rlname is None:
+            w_var.rlname = new_rlayer.name
 
         # only used for blender internal wireframe, two scenes --> two render layer names
         else:
-            w_variables.rlname_2 = new_rlayer.name
+            w_var.rlname_2 = new_rlayer.name
 
         # there needs to be two render layers for freestyle compositing
-        if (w_variables.original_scene.CheckboxComp
-                and w_variables.original_scene.WireframeType == 'WIREFRAME_FREESTYLE'):
+        if w_var.cb_comp and w_var.original_scene.WireframeType == 'WIREFRAME_FREESTYLE':
             new_rlayer = scene.render.layers.new(rlname_other)
-            w_variables.rlname_other = new_rlayer.name
+            w_var.rlname_other = new_rlayer.name
 
-        if w_variables.original_scene.CheckboxUseAO:
+        if w_var.cb_ao:
             scene.render.layers[rlname].use_pass_ambient_occlusion = True
 
-            if (w_variables.original_scene.CheckboxComp
-                    and w_variables.original_scene.WireframeType == 'WIREFRAME_FREESTYLE'):
+            if w_var.cb_comp and w_var.original_scene.WireframeType == 'WIREFRAME_FREESTYLE':
                 scene.render.layers[rlname_other].use_pass_ambient_occlusion = True
 
         for i in layer_numbers:
-            if (w_variables.original_scene.CheckboxComp
-                    and w_variables.original_scene.WireframeType == 'WIREFRAME_FREESTYLE'):
-                if w_variables.other_layers_numbers is not None:
-                    if i in w_variables.other_layers_numbers:
+            if w_var.cb_comp and w_var.original_scene.WireframeType == 'WIREFRAME_FREESTYLE':
+                if w_var.other_layers_numbers is not None:
+                    if i in w_var.other_layers_numbers:
                         scene.render.layers[rlname].layers_zmask[i] = True
                         scene.render.layers[rlname_other].layers[i] = True
 
@@ -190,8 +189,8 @@ class BlenderSceneW(BlenderScene):
                         scene.render.layers[rlname].layers_zmask[i] = False
                         scene.render.layers[rlname_other].layers[i] = False
 
-                if w_variables.affected_layers_numbers is not None:
-                    if i in w_variables.affected_layers_numbers:
+                if w_var.affected_layers_numbers is not None:
+                    if i in w_var.affected_layers_numbers:
                         scene.render.layers[rlname_other].layers_zmask[i] = True
                         scene.render.layers[rlname].layers[i] = True
 
@@ -224,37 +223,35 @@ class BlenderSceneW(BlenderScene):
         """Deletes all objects in blender internal that is not going to get wireframed.
 
         This is for the wireframe type 'Blender Internal'.
-
-        Args:
-            scene_instance: An instance of the class BlenderSceneW.
         """
         scene = self.set_as_active()
+        previous_area = bpy.context.area.type
+        bpy.context.area.type = 'VIEW_3D'
         previous_layers = list(scene.layers)
         scene.layers = (True,)*20
         self.select('DESELECT', ['ALL'])
 
-        if w_variables.original_scene.CheckboxOnlySelected:
+        if w_var.cb_only_selected:
             for obj in scene.objects:
-                if obj not in w_variables.only_selected and obj.type != 'CAMERA':
+                if (obj not in w_var.only_selected
+                        and self.object_on_layer(obj, w_var.other_layers_numbers) is False):
                     obj.select = True
-                    # TODO does this work without 3D view active?
                     bpy.ops.object.delete()
 
         else:
             for obj in scene.objects:
-                if (self.object_on_layer(obj, w_variables.all_layers_used_numbers) is False
-                        or obj.type not in ('MESH', 'CAMERA')):
+                if self.object_on_layer(obj, w_var.all_layers_used_numbers) is False:
                     obj.select = True
-                    # TODO does this work without 3D view active?
                     bpy.ops.object.delete()
 
         scene.layers = previous_layers
+        bpy.context.area.type = previous_area
 
     def comp_add_wireframe_bi(self, wire_scene_intance):
         """Sets up the compositor nodes for the wireframe type 'Blender Internal'.
 
         Args:
-            scene_instance: An instance of the class BlenderSceneW.
+            wire_scene_instance: An instance of the class BlenderSceneW.
         """
         scene = self.set_as_active()
 
@@ -269,12 +266,12 @@ class BlenderSceneW(BlenderScene):
         rlwire = tree.nodes.new('CompositorNodeRLayers')
         rlwire.location = -400, -75
         rlwire.scene = bpy.data.scenes[wire_scene_intance.name]
-        rlwire.layer = w_variables.rlname
+        rlwire.layer = w_var.rlname
 
         rlclay = tree.nodes.new('CompositorNodeRLayers')
         rlclay.location = -400, 250
         rlclay.scene = scene
-        rlclay.layer = w_variables.rlname_2
+        rlclay.layer = w_var.rlname_2
 
         comp = tree.nodes.new('CompositorNodeComposite')
         comp.location = 400, 65
@@ -287,7 +284,7 @@ class BlenderSceneW(BlenderScene):
         links.new(rlclay.outputs[0], alphaover.inputs[1])
         links.new(rlwire.outputs[0], alphaover.inputs[2])
 
-        if w_variables.original_scene.CheckboxUseAO:
+        if w_var.cb_ao:
             colormix = tree.nodes.new('CompositorNodeMixRGB')
             colormix.location = 100, 140
             colormix.blend_type = 'MULTIPLY'
@@ -306,11 +303,7 @@ class BlenderSceneW(BlenderScene):
             node.select = False
 
     def comp_add_wireframe_freestyle(self):
-        """Sets up the compositor nodes for the wireframe type 'Freestyle'.
-
-        Args:
-            scene_instance: An instance of the class BlenderSceneW.
-        """
+        """Sets up the compositor nodes for the wireframe type 'Freestyle'."""
         scene = self.set_as_active()
 
         scene.use_nodes = True
@@ -324,12 +317,12 @@ class BlenderSceneW(BlenderScene):
         rlwire = tree.nodes.new('CompositorNodeRLayers')
         rlwire.location = -400, 250
         rlwire.scene = scene
-        rlwire.layer = w_variables.rlname
+        rlwire.layer = w_var.rlname
 
         rlclay = tree.nodes.new('CompositorNodeRLayers')
         rlclay.location = -400, -75
         rlclay.scene = scene
-        rlclay.layer = w_variables.rlname_other
+        rlclay.layer = w_var.rlname_other
 
         comp = tree.nodes.new('CompositorNodeComposite')
         comp.location = 400, 65
@@ -342,7 +335,7 @@ class BlenderSceneW(BlenderScene):
         links.new(rlwire.outputs[0], alphaover.inputs[1])
         links.new(rlclay.outputs[0], alphaover.inputs[2])
 
-        if w_variables.original_scene.CheckboxUseAO:
+        if w_var.cb_ao:
             colormix_wire = tree.nodes.new('CompositorNodeMixRGB')
             colormix_wire.location = -125, 150
             colormix_wire.blend_type = 'MULTIPLY'
@@ -375,11 +368,7 @@ class BlenderSceneW(BlenderScene):
             node.select = False
 
     def comp_add_ao(self):
-        """Sets up the compositor nodes for the ambient occlusion (AO) effect.
-
-        Args:
-            scene_instance: An instance of the class BlenderSceneW.
-        """
+        """Sets up the compositor nodes for the ambient occlusion (AO) effect."""
         scene = self.set_as_active()
 
         scene.use_nodes = True
@@ -394,7 +383,7 @@ class BlenderSceneW(BlenderScene):
 
         rlayer = tree.nodes.new('CompositorNodeRLayers')
         rlayer.location = -300, 100
-        rlayer.layer = w_variables.rlname
+        rlayer.layer = w_var.rlname
 
         comp = tree.nodes.new('CompositorNodeComposite')
         comp.location = 300, 130
@@ -415,19 +404,16 @@ class BlenderSceneW(BlenderScene):
     def add_clay_mat_to_selected(self):
         """Creates and sets the clay material to all selected objects in cycles.
 
-        Args:
-            scene_instance: An instance of the class BlenderSceneW.
-
         Returns:
             The clay material data object.
         """
         scene = self.set_as_active()
 
-        if bpy.context.scene.CheckboxUseMatClay:
-            clay_mat = w_variables.clay_mat_set
+        if w_var.cb_mat_clay:
+            clay_mat = w_var.clay_mat_set
 
         else:
-            clay_color = w_variables.original_scene.ColorClay
+            clay_color = w_var.original_scene.ColorClay
             # separating rgb from alpha
             clay_color_rgb = clay_color[0:3]
 
@@ -456,7 +442,7 @@ class BlenderSceneW(BlenderScene):
             for node in tree.nodes:
                 node.select = False
 
-        # 1 if all meshes is selected, 0 if not.
+        # 1 if all meshes is selected, 0 if not
         mesh_select = 1
 
         for obj in scene.objects:
@@ -464,21 +450,23 @@ class BlenderSceneW(BlenderScene):
                 if not obj.select:
                     mesh_select = 0
                     break
-
-        if mesh_select == 1 and w_variables.original_scene.WireframeType != 'WIREFRAME_MODIFIER':
+        # todo why not in wireframe modifier?
+        if mesh_select == 1: #and w_var.original_scene.WireframeType != 'WIREFRAME_MODIFIER':
             scene.render.layers.active.material_override = clay_mat
 
         else:
+            previous_area = bpy.context.area.type
+            bpy.context.area.type = 'VIEW_3D'
             previous_layers = list(scene.layers)
             scene.layers = (True,)*20
+
             for obj in scene.objects:
                 if obj.select:
                     scene.objects.active = obj
-
                     obj.data.materials.append(clay_mat)
                     clay_index = b_tools.find_material_index(obj, clay_mat)
                     obj.active_material_index = clay_index
-                    # TODO does this work without 3D view active?
+
                     bpy.ops.object.mode_set(mode='EDIT')
                     bpy.ops.mesh.select_all(action='SELECT')
 
@@ -488,25 +476,23 @@ class BlenderSceneW(BlenderScene):
                     bpy.ops.object.mode_set(mode='OBJECT')
 
             scene.layers = previous_layers
+            bpy.context.area.type = previous_area
 
         return clay_mat
 
     def add_wireframe_bi_to_selected(self):
         """Creates and sets the wireframe material to all selected objects in blender internal.
 
-        Args:
-            scene_instance: An instance of the class BlenderSceneW.
-
         Returns:
             The wireframe material data object.
         """
         self.set_as_active()
 
-        if bpy.context.scene.CheckboxUseMatWire:
-            wireframe_mat = w_variables.wire_mat_set
+        if w_var.cb_mat_wire:
+            wireframe_mat = w_var.wire_mat_set
 
         else:
-            wire_color = w_variables.original_scene.ColorWire
+            wire_color = w_var.original_scene.ColorWire
             # separating rgb and alpha
             wire_color_rgb = wire_color[0:3]
             wire_color_alpha = wire_color[-1]
@@ -528,19 +514,16 @@ class BlenderSceneW(BlenderScene):
     def add_wireframe_modifier(self):
         """Creates and sets the wireframe modifier and material to all selected objects in cycles render engine.
 
-        Args:
-            scene_instance: An instance of the class BlenderSceneW.
-
         Returns:
             The wireframe material data object.
         """
         scene = self.set_as_active()
 
-        if bpy.context.scene.CheckboxUseMatWire:
-            wireframe_mat = w_variables.wire_mat_set
+        if w_var.cb_mat_wire:
+            wireframe_mat = w_var.wire_mat_set
 
         else:
-            wire_color = w_variables.original_scene.ColorWire
+            wire_color = w_var.original_scene.ColorWire
             # separating rgb from alpha
             wireframe_color_rgb = wire_color[0:3]
 
@@ -585,27 +568,24 @@ class BlenderSceneW(BlenderScene):
                 wireframe_modifier.use_even_offset = False
                 wireframe_modifier.use_replace = False
                 wireframe_modifier.material_offset = bpy.context.active_object.active_material_index
-                wireframe_modifier.thickness = w_variables.original_scene.SliderWireThicknessModifier
+                wireframe_modifier.thickness = w_var.original_scene.SliderWireThicknessModifier
 
         return wireframe_mat
 
     def add_wireframe_freestyle(self):
         """Enables and sets up freestyle wireframing in cycles.
 
-        Args:
-            scene_instance: An instance of the class BlenderSceneW.
-
         Returns:
             The linestyle data object used in the freestyle rendering.
         """
         scene = self.set_as_active()
-
+        previous_area = bpy.context.area.type
+        bpy.context.area.type = 'VIEW_3D'
         self.select('SELECT', ['MESH'], ['ELSE'])
 
         for obj in scene.objects:
             if obj.select:
                 scene.objects.active = obj
-                # TODO does this work without 3D view active?
                 bpy.ops.object.mode_set(mode='EDIT')
                 bpy.ops.mesh.select_all(action='SELECT')
 
@@ -615,8 +595,7 @@ class BlenderSceneW(BlenderScene):
                 bpy.ops.object.mode_set(mode='OBJECT')
 
         scene.render.use_freestyle = True
-
-        scene.render.layers.active = scene.render.layers[w_variables.rlname]
+        scene.render.layers.active = scene.render.layers[w_var.rlname]
 
         for n in scene.render.layers.active.freestyle_settings.linesets:
             scene.render.layers.active.freestyle_settings.linesets.remove(n)
@@ -625,8 +604,8 @@ class BlenderSceneW(BlenderScene):
         lineset.select_edge_mark = True
         lineset.select_crease = False
 
-        wire_color = w_variables.original_scene.ColorWire
-        wire_thickness = w_variables.original_scene.SliderWireThicknessFreestyle
+        wire_color = w_var.original_scene.ColorWire
+        wire_thickness = w_var.original_scene.SliderWireThicknessFreestyle
 
         wire_color_rgb = wire_color[0:3]
         wire_color_alpha = wire_color[-1]
@@ -637,15 +616,12 @@ class BlenderSceneW(BlenderScene):
         linestyle.thickness = wire_thickness
 
         scene.render.layers.active.freestyle_settings.linesets.active.linestyle = linestyle
+        bpy.context.area.type = previous_area
 
         return linestyle
 
     def set_up_world_ao(self):
-        """Sets up a new world for the ambient occlusion (AO) effect in cycles.
-
-        Args:
-            scene_instance: An instance of the class BlenderSceneW.
-        """
+        """Sets up a new world with the ambient occlusion (AO) effect in cycles."""
         scene = self.set_as_active()
 
         new_world = bpy.context.blend_data.worlds.new('World of Wireframe')

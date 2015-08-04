@@ -48,7 +48,7 @@ def layerlist_to_numberlist(layer_list):
     representing the layers that are True in layer_list.
 
     Example:
-        >>> print(layerlist_to_numberlist[False, True, False, False, True])
+        >>> print(layerlist_to_numberlist([False, True, False, False, True]))
         [1, 4]
 
         This because layer 2 (index 1) and layer 3 (index 4) are both True.

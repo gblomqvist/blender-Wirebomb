@@ -2,7 +2,7 @@
 import bpy
 from . import w_tools
 from . import b_tools
-from . import w_variables
+from . import w_var
 from .w_b_scene import BlenderSceneW
 
 
@@ -25,62 +25,78 @@ class WireframeOperator(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        if (context.scene.CheckboxOnlySelected
-                and not b_tools.check_any_selected(context.scene, ['MESH'])):
+        if context.scene.cb_only_selected and not b_tools.check_any_selected(context.scene, ['MESH']):
             self.error_msg += "- Checkbox 'Only Selected' is activated but no mesh is selected!\n"
             self.success = False
-            w_variables.error_101 = True  # used for row alert in __init__.py
+            w_var.error_101 = True  # used for row alert in __init__.py
 
-        if (not context.scene.CheckboxOnlySelected and
+        if (not context.scene.cb_only_selected and
                 not any(list(context.scene.LayersAffected)) and not any(list(context.scene.LayersOther))):
             self.error_msg += "- No affected layers selected!\n"
             self.success = False
 
-        if ((context.scene.WireframeType != 'WIREFRAME_FREESTYLE' and context.scene.CheckboxUseMatWire)
-                or context.scene.CheckboxUseMatClay) and len(bpy.data.materials) == 0:
-            self.error_msg += '- No materials in scene!\n'
+        if (context.scene.WireframeType != 'WIREFRAME_FREESTYLE' and context.scene.cb_mat_wire
+                and context.scene.Materials.mat_wire == ''):
+            self.error_msg += '- No wire material selected!\n'
             self.success = False
-            if context.scene.CheckboxUseMatWire:
-                w_variables.error_201 = True  # used for row alert in __init__.py
-            if context.scene.CheckboxUseMatClay:
-                w_variables.error_202 = True  # used for row alert in __init__.py
+            w_var.error_201 = True  # used for row alert in __init__.py
+
+        if context.scene.cb_mat_clay and context.scene.Materials.mat_clay == '':
+            self.error_msg += '- No clay material selected!\n'
+            self.success = False
+            w_var.error_202 = True  # used for row alert in __init__.py
 
         if len(context.scene.CustomSceneName) == 0:
             self.error_msg += '- No wire scene name!\n'
             self.success = False
-            w_variables.error_301 = True  # used for row alert in __init__.py
+            w_var.error_301 = True  # used for row alert in __init__.py
 
         if context.scene.WireframeType == 'WIREFRAME_BI' and len(context.scene.CustomSceneName2) == 0:
             self.error_msg += '- No clay scene name!\n'
             self.success = False
-            w_variables.error_302 = True  # used for row alert in __init__.py
+            w_var.error_302 = True  # used for row alert in __init__.py
 
         if self.success:
-            w_variables.scene_name_1 = context.scene.CustomSceneName
-            w_variables.scene_name_2 = context.scene.CustomSceneName2
-            w_variables.original_scene = context.scene
-            w_variables.other_layers_numbers = b_tools.layerlist_to_numberlist(w_tools.set_layers_other())
-            w_variables.affected_layers_numbers = b_tools.layerlist_to_numberlist(w_tools.set_layers_affected())
-            w_variables.all_layers_used_numbers = b_tools.layerlist_to_numberlist(w_tools.set_layers_used())
+            # checkboxes
+            w_var.cb_backup = context.scene.cb_backup
+            w_var.cb_clear_rlayers = context.scene.cb_clear_rlayers
+            w_var.cb_only_selected = context.scene.cb_only_selected
+            w_var.cb_ao = context.scene.cb_ao
+            w_var.cb_clay = context.scene.cb_clay
+            w_var.cb_clay_only = context.scene.cb_clay_only
+            # todo does this w_var work properly?
+            w_var.cb_comp = w_var.cb_comp_active and context.scene.cb_comp
+            # scene names
+            w_var.scene_name_1 = context.scene.CustomSceneName
+            w_var.scene_name_2 = context.scene.CustomSceneName2
+            # original scene
+            w_var.original_scene = context.scene
+            # layers
+            w_var.other_layers_numbers = b_tools.layerlist_to_numberlist(w_tools.set_layers_other())
+            w_var.affected_layers_numbers = b_tools.layerlist_to_numberlist(w_tools.set_layers_affected())
+            w_var.all_layers_used_numbers = b_tools.layerlist_to_numberlist(w_tools.set_layers_used())
+            # todo better way to check if row is active?
+            if context.scene.WireframeType != 'WIREFRAME_FREESTYLE' and context.scene.cb_mat_wire:
+                w_var.wire_mat_set = bpy.data.materials[context.scene.Materials.mat_wire]
 
-            if context.scene.WireframeType != 'WIREFRAME_FREESTYLE' and context.scene.CheckboxUseMatWire:
-                w_variables.wire_mat_set = bpy.data.materials[context.scene.Materials.mat_wire]
+            if context.scene.cb_mat_clay:
+                w_var.clay_mat_set = bpy.data.materials[context.scene.Materials.mat_clay]
 
-            if context.scene.CheckboxUseMatClay:
-                w_variables.clay_mat_set = bpy.data.materials[context.scene.Materials.mat_clay]
-
-            if w_variables.original_scene.WireframeType == 'WIREFRAME_BI':
+            if w_var.original_scene.WireframeType == 'WIREFRAME_BI':
                 self.create_wireframe_scene_bi()
 
-            elif w_variables.original_scene.WireframeType == 'WIREFRAME_FREESTYLE':
+            elif w_var.original_scene.WireframeType == 'WIREFRAME_FREESTYLE':
                 self.create_wireframe_scene_freestyle()
 
-            elif w_variables.original_scene.WireframeType == 'WIREFRAME_MODIFIER':
+            elif w_var.original_scene.WireframeType == 'WIREFRAME_MODIFIER':
                 self.create_wireframe_scene_modifier()
+
+            if w_var.cb_only_selected:
+                w_var.only_selected = BlenderSceneW.selected_objects_to_list(context.scene, ['MESH'])
 
             # TODO below not needed anymore?
             # setting material lists items to be what they were before, in backup scene and original scene
-            # if context.scene.CheckboxBackup:
+            # if context.scene.cb_backup:
             #     try:
             #         context.scene.Materials.mat_wire = wvariables.wire_mat_set.name
             #         context.scene.Materials.mat_clay = wvariables.clay_mat_set.name
@@ -96,99 +112,73 @@ class WireframeOperator(bpy.types.Operator):
     @staticmethod
     def create_wireframe_scene_bi():
         """Creates the complete wireframe using the blender internal setup."""
-        if not (w_variables.original_scene.CheckboxOnlyClay and w_variables.original_scene.CheckboxUseClay):
+        if not (w_var.cb_clay_only and w_var.cb_clay):
             # creates wires scene
-            wire_scene = BlenderSceneW(w_variables.original_scene, w_variables.original_scene.CheckboxBackup,
-                                       w_variables.scene_name_1, 'BLENDER_RENDER')
-            wire_scene.set_as_active()
+            wire_scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_1, 'BLENDER_RENDER')
+
             original_pivotpoint = wire_scene.view3d_pivotpoint('get')
             wire_scene.view3d_pivotpoint('set', 'BOUNDING_BOX_CENTER')
 
-            if w_variables.original_scene.CheckboxOnlySelected:
-                w_variables.only_selected = wire_scene.selected_objects_to_list(['MESH'])
-            # TODO make sure it runs...
-            # TODO clean 'select' function calls?
-            # TODO remove 'set_as_active' calls?
             wire_scene.clean_objects()
             wire_scene.clear_all_materials()
             wire_scene.set_up_rlayer('wireframe', [0, 1], [0], [1])
 
-            wire_scene.select('SELECT', ['MESH', 'CAMERA'], ['ELSE'], w_variables.affected_layers_numbers, ['ELSE'])
+            wire_scene.select('SELECT', layers=w_var.affected_layers_numbers, layers_excluded=['ELSE'])
             wire_scene.move_selected_to_layer(0)
 
-            wire_scene.select('SELECT', ['MESH'], ['ELSE'], w_variables.other_layers_numbers, ['ELSE'])
+            wire_scene.select('SELECT', layers=w_var.other_layers_numbers, layers_excluded=['ELSE'])
             wire_scene.move_selected_to_layer(1)
-
+            # copy first to skip materials on copies
             wire_scene.select('SELECT', ['MESH'], ['ELSE'], [0], ['ELSE'])
             wire_scene.copy_selected_to_layer(1)
-            """
-            wire_scene.select('DESELECT', ['ALL'])
 
-            wire_scene.select('SELECT', ['MESH'], ['ELSE'], [0])
-            w_variables.wire_bi_mat = wire_scene.add_wireframe_bi_to_selected()
+            wire_scene.select('SELECT', ['MESH'], ['ELSE'], [0], ['ELSE'])
+            w_var.wire_bi_mat = wire_scene.add_wireframe_bi_to_selected()
 
             wire_scene.select('DESELECT', ['ALL'])
             wire_scene.view3d_pivotpoint('set', original_pivotpoint)
-            #TODO
             bpy.data.scenes[wire_scene.name].render.alpha_mode = 'TRANSPARENT'
 
             # creates clay scene
-            clay_scene = BlenderSceneW(w_variables.original_scene, w_variables.original_scene.CheckboxBackup,
-                                       w_variables.scene_name_2, 'CYCLES')
+            clay_scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_2, 'CYCLES')
             clay_scene.set_up_rlayer('clay')
             clay_scene.comp_add_wireframe_bi(wire_scene)
 
         else:
-            clay_scene = BlenderSceneW(w_variables.original_scene, w_variables.original_scene.CheckboxBackup,
-                                       'clay', 'CYCLES')
+            clay_scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, 'clay', 'CYCLES')
             clay_scene.set_up_rlayer('clay')
-        
-        if w_variables.original_scene.CheckboxOnlySelected:
-            w_variables.only_selected = clay_scene.selected_objects_to_list(['MESH'])
 
-        if w_variables.original_scene.CheckboxUseClay:
+        if w_var.cb_clay:
             clay_scene.select('SELECT', ['MESH'], ['ELSE'])
-            w_variables.clay_mat = clay_scene.add_clay_mat_to_selected()
+            w_var.clay_mat = clay_scene.add_clay_mat_to_selected()
 
-        if w_variables.original_scene.CheckboxUseAO:
+        if w_var.cb_ao:
             clay_scene.set_up_world_ao()
 
         clay_scene.select('DESELECT', ['ALL'])
-        """
+
     @staticmethod
     def create_wireframe_scene_freestyle():
         """Creates the complete wireframe using the freestyle setup."""
-        if not (w_variables.original_scene.CheckboxOnlyClay and w_variables.original_scene.CheckboxUseClay):
-            wire_scene = BlenderSceneW(w_variables.original_scene, w_variables.original_scene.CheckboxBackup,
-                                       w_variables.scene_name_1, 'CYCLES')
+        wire_scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_1, 'CYCLES')
 
-        else:
-            wire_scene = BlenderSceneW(w_variables.original_scene, w_variables.original_scene.CheckboxBackup,
-                                       w_variables.scene_name_1, 'CYCLES')
-        # TODO fix composite checkbox not active thing
-        wire_scene.set_as_active()
-
-        if w_variables.original_scene.CheckboxOnlySelected:
-            w_variables.only_selected = wire_scene.selected_objects_to_list(['MESH'])
-
-        if not (w_variables.original_scene.CheckboxOnlyClay and w_variables.original_scene.CheckboxUseClay):
-            wire_scene.set_up_rlayer('wireframe', rlname_other='clay')
+        if not (w_var.cb_clay_only and w_var.cb_clay):
+            wire_scene.set_up_rlayer('wireframe', rlname_other='other')
+            w_var.wire_freestyle_linestyle = wire_scene.add_wireframe_freestyle()
 
         else:
             wire_scene.set_up_rlayer('clay')
-
-        if w_variables.original_scene.CheckboxUseClay:
+        # TODO fix composite checkbox not active, still uses
+        if w_var.cb_clay:
             wire_scene.select('SELECT', ['MESH'], ['ELSE'])
-            w_variables.clay_mat = wire_scene.add_clay_mat_to_selected()
+            w_var.clay_mat = wire_scene.add_clay_mat_to_selected()
 
-        if not (w_variables.original_scene.CheckboxOnlyClay and w_variables.original_scene.CheckboxUseClay):
-            w_variables.wire_freestyle = wire_scene.add_wireframe_freestyle()
-
-        if w_variables.original_scene.CheckboxUseAO and not w_variables.original_scene.CheckboxComp:
+        # todo is this part correct?
+        if w_var.cb_ao and not w_var.cb_comp:
             wire_scene.comp_add_ao()
             wire_scene.set_up_world_ao()
-
-        elif w_variables.original_scene.CheckboxComp:
+        # todo deactivate AO checkbox when comp checkbox is True
+        elif w_var.cb_comp:
             wire_scene.comp_add_wireframe_freestyle()
             bpy.data.scenes[wire_scene.name].cycles.film_transparent = True
 
@@ -197,36 +187,24 @@ class WireframeOperator(bpy.types.Operator):
     @staticmethod
     def create_wireframe_scene_modifier():
         """Creates the complete wireframe using the modifier setup."""
-        if not (w_variables.original_scene.CheckboxOnlyClay and w_variables.original_scene.CheckboxUseClay):
-            wire_scene = BlenderSceneW(w_variables.original_scene, w_variables.original_scene.CheckboxBackup,
-                                       w_variables.scene_name_1, 'CYCLES')
+        wire_scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_1, 'CYCLES')
+        # todo set only selected in invoke method instead?
 
-        else:
-            wire_scene = BlenderSceneW(w_variables.original_scene, w_variables.original_scene.CheckboxBackup,
-                                       w_variables.scene_name_1, 'CYCLES')
-
-        wire_scene.set_as_active()
-
-        if w_variables.original_scene.CheckboxOnlySelected:
-            w_variables.only_selected = wire_scene.selected_objects_to_list(['MESH'])
-
-        if not (w_variables.original_scene.CheckboxOnlyClay and w_variables.original_scene.CheckboxUseClay):
+        if not (w_var.cb_clay_only and w_var.cb_clay):
             wire_scene.set_up_rlayer('wireframe')
+            wire_scene.select('SELECT', ['MESH'], ['ELSE'])
+            w_var.wire_modifier_mat = wire_scene.add_wireframe_modifier()
 
         else:
             wire_scene.set_up_rlayer('clay')
 
-        if w_variables.original_scene.CheckboxUseClay:
+        if w_var.cb_clay:
             wire_scene.select('SELECT', ['MESH'], ['ELSE'])
-            w_variables.clay_mat = wire_scene.add_clay_mat_to_selected()
+            w_var.clay_mat = wire_scene.add_clay_mat_to_selected()
 
-        if w_variables.original_scene.CheckboxUseAO:
+        if w_var.cb_ao:
             wire_scene.set_up_world_ao()
             wire_scene.comp_add_ao()
-
-        if not (w_variables.original_scene.CheckboxOnlyClay and w_variables.original_scene.CheckboxUseClay):
-            wire_scene.select('SELECT', ['MESH'], ['ELSE'])
-            w_variables.wire_modifier_mat = wire_scene.add_wireframe_modifier()
 
         wire_scene.select('DESELECT', ['ALL'])
 
