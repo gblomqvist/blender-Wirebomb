@@ -168,18 +168,18 @@ class BlenderSceneW(BlenderScene):
             w_var.rlname_2 = new_rlayer.name
 
         # there needs to be two render layers for freestyle compositing
-        if w_var.cb_comp and w_var.original_scene.WireframeType == 'WIREFRAME_FREESTYLE':
+        if w_var.cb_comp and w_var.original_scene.wireframe_type == 'WIREFRAME_FREESTYLE':
             new_rlayer = scene.render.layers.new(rlname_other)
             w_var.rlname_other = new_rlayer.name
 
         if w_var.cb_ao:
             scene.render.layers[rlname].use_pass_ambient_occlusion = True
 
-            if w_var.cb_comp and w_var.original_scene.WireframeType == 'WIREFRAME_FREESTYLE':
+            if w_var.cb_comp and w_var.original_scene.wireframe_type == 'WIREFRAME_FREESTYLE':
                 scene.render.layers[rlname_other].use_pass_ambient_occlusion = True
 
         for i in layer_numbers:
-            if w_var.cb_comp and w_var.original_scene.WireframeType == 'WIREFRAME_FREESTYLE':
+            if w_var.cb_comp and w_var.original_scene.wireframe_type == 'WIREFRAME_FREESTYLE':
                 if w_var.other_layers_numbers is not None:
                     if i in w_var.other_layers_numbers:
                         scene.render.layers[rlname].layers_zmask[i] = True
@@ -413,7 +413,7 @@ class BlenderSceneW(BlenderScene):
             clay_mat = w_var.clay_mat_set
 
         else:
-            clay_color = w_var.original_scene.ColorClay
+            clay_color = w_var.original_scene.color_clay
             # separating rgb from alpha
             clay_color_rgb = clay_color[0:3]
 
@@ -451,7 +451,7 @@ class BlenderSceneW(BlenderScene):
                     mesh_select = 0
                     break
         # todo why not in wireframe modifier?
-        if mesh_select == 1: #and w_var.original_scene.WireframeType != 'WIREFRAME_MODIFIER':
+        if mesh_select == 1: #and w_var.original_scene.wireframe_type != 'WIREFRAME_MODIFIER':
             scene.render.layers.active.material_override = clay_mat
 
         else:
@@ -492,7 +492,7 @@ class BlenderSceneW(BlenderScene):
             wireframe_mat = w_var.wire_mat_set
 
         else:
-            wire_color = w_var.original_scene.ColorWire
+            wire_color = w_var.original_scene.color_wire
             # separating rgb and alpha
             wire_color_rgb = wire_color[0:3]
             wire_color_alpha = wire_color[-1]
@@ -523,7 +523,7 @@ class BlenderSceneW(BlenderScene):
             wireframe_mat = w_var.wire_mat_set
 
         else:
-            wire_color = w_var.original_scene.ColorWire
+            wire_color = w_var.original_scene.color_wire
             # separating rgb from alpha
             wireframe_color_rgb = wire_color[0:3]
 
@@ -568,7 +568,7 @@ class BlenderSceneW(BlenderScene):
                 wireframe_modifier.use_even_offset = False
                 wireframe_modifier.use_replace = False
                 wireframe_modifier.material_offset = bpy.context.active_object.active_material_index
-                wireframe_modifier.thickness = w_var.original_scene.SliderWireThicknessModifier
+                wireframe_modifier.thickness = w_var.original_scene.slider_wt_modifier
 
         return wireframe_mat
 
@@ -604,8 +604,8 @@ class BlenderSceneW(BlenderScene):
         lineset.select_edge_mark = True
         lineset.select_crease = False
 
-        wire_color = w_var.original_scene.ColorWire
-        wire_thickness = w_var.original_scene.SliderWireThicknessFreestyle
+        wire_color = w_var.original_scene.color_wire
+        wire_thickness = w_var.original_scene.slider_wt_freestyle
 
         wire_color_rgb = wire_color[0:3]
         wire_color_alpha = wire_color[-1]

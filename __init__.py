@@ -42,19 +42,18 @@ from .w_b_scene import BlenderSceneW
 
 def register():
     bpy.utils.register_module(__name__)
-    bpy.types.Scene.Materials = bpy.props.PointerProperty(type=MaterialSettings)
+    bpy.types.Scene.materials = bpy.props.PointerProperty(type=MaterialSettings)
 
 
 def unregister():
     bpy.utils.unregister_module(__name__)
-    del bpy.types.Scene.Materials
+    del bpy.types.Scene.materials
 
 if __name__ == '__main__':
     register()
 
 
 def scene_materials(scene, context):
-
     mat_list = []
 
     for mat in bpy.data.materials:
@@ -64,30 +63,28 @@ def scene_materials(scene, context):
 
 
 class MaterialSettings(bpy.types.PropertyGroup):
-
-    mat_clay = bpy.props.EnumProperty(items=scene_materials,
-                                      name='Clay material')
-
-    mat_wire = bpy.props.EnumProperty(items=scene_materials,
-                                      name='Wire material')
+    clay = bpy.props.EnumProperty(items=scene_materials,
+                                  name='Clay material')
+    wire = bpy.props.EnumProperty(items=scene_materials,
+                                  name='Wire material')
 
 
 def update_color_wire(self, context):
     """Updates the real wireframe material's color."""
     try:
-        if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
-            w_var.wire_freestyle_linestyle.color = context.scene.ColorWire[0:3]
-            w_var.wire_freestyle_linestyle.alpha = context.scene.ColorWire[-1]
+        if context.scene.wireframe_type == 'WIREFRAME_FREESTYLE':
+            w_var.wire_freestyle_linestyle.color = context.scene.color_wire[0:3]
+            w_var.wire_freestyle_linestyle.alpha = context.scene.color_wire[-1]
 
-        elif context.scene.WireframeType == 'WIREFRAME_MODIFIER':
+        elif context.scene.wireframe_type == 'WIREFRAME_MODIFIER':
             for node in w_var.wire_modifier_mat.node_tree.nodes:
                 if node.type == 'BSDF_DIFFUSE':
-                    node.inputs[0].default_value = context.scene.ColorWire
-            w_var.wire_modifier_mat.diffuse_color = context.scene.ColorWire[0:3]
+                    node.inputs[0].default_value = context.scene.color_wire
+            w_var.wire_modifier_mat.diffuse_color = context.scene.color_wire[0:3]
 
-        elif context.scene.WireframeType == 'WIREFRAME_BI':
-            w_var.wire_bi_mat.diffuse_color = context.scene.ColorWire[0:3]
-            w_var.wire_bi_mat.alpha = context.scene.ColorWire[-1]
+        elif context.scene.wireframe_type == 'WIREFRAME_BI':
+            w_var.wire_bi_mat.diffuse_color = context.scene.color_wire[0:3]
+            w_var.wire_bi_mat.alpha = context.scene.color_wire[-1]
 
     except AttributeError:
         pass
@@ -98,8 +95,8 @@ def update_color_clay(self, context):
     try:
         for node in w_var.clay_mat.node_tree.nodes:
             if node.type == 'BSDF_DIFFUSE':
-                node.inputs[0].default_value = context.scene.ColorClay
-        w_var.clay_mat.diffuse_color = context.scene.ColorClay[0:3]
+                node.inputs[0].default_value = context.scene.color_clay
+        w_var.clay_mat.diffuse_color = context.scene.color_clay[0:3]
 
     except AttributeError:
         pass
@@ -107,20 +104,20 @@ def update_color_clay(self, context):
 
 def update_wire_thickness(self, context):
     """Updates the real wireframe's thickness."""
-    if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
-        w_var.wire_freestyle_linestyle.thickness = context.scene.SliderWireThicknessFreestyle
+    if context.scene.wireframe_type == 'WIREFRAME_FREESTYLE':
+        w_var.wire_freestyle_linestyle.thickness = context.scene.slider_wt_freestyle
 
-    elif context.scene.WireframeType == 'WIREFRAME_MODIFIER':
+    elif context.scene.wireframe_type == 'WIREFRAME_MODIFIER':
         for obj in context.scene.objects:
             if ((context.scene.cb_only_selected and obj in w_var.only_selected)
                     or (not context.scene.cb_only_selected and
                         b_tools.object_on_layer(context.scene, obj, w_var.affected_layers_numbers))):
                 for modifier in obj.modifiers:
                     if modifier.type == 'WIREFRAME':
-                        modifier.thickness = context.scene.SliderWireThicknessModifier
+                        modifier.thickness = context.scene.slider_wt_modifier
 
 # creates drop-down list with different wireframe types
-bpy.types.Scene.WireframeType = bpy.props.EnumProperty(
+bpy.types.Scene.wireframe_type = bpy.props.EnumProperty(
     items=[('WIREFRAME_MODIFIER', 'Modifier', 'Create wireframe using cycles and the wireframe modifier'),
            ('WIREFRAME_FREESTYLE', 'Freestyle', 'Create wireframe using cycles freestyle renderer'),
            ('WIREFRAME_BI', 'Blender Internal', 'Create wireframe using blender\'s internal renderer')],
@@ -128,31 +125,31 @@ bpy.types.Scene.WireframeType = bpy.props.EnumProperty(
     default='WIREFRAME_FREESTYLE')
 
 # creates two color pickers
-bpy.types.Scene.ColorWire = bpy.props.FloatVectorProperty(subtype='COLOR',
-                                                          min=0,
-                                                          max=1,
-                                                          size=4,
-                                                          default=(0, 1, 0.977, 0.8),
-                                                          update=update_color_wire,
-                                                          description="Wire color (changes real-time)")
+bpy.types.Scene.color_wire = bpy.props.FloatVectorProperty(subtype='COLOR',
+                                                           min=0,
+                                                           max=1,
+                                                           size=4,
+                                                           default=(0, 1, 0.977, 0.8),
+                                                           update=update_color_wire,
+                                                           description="Wire color (changes real-time)")
+bpy.types.Scene.color_clay = bpy.props.FloatVectorProperty(subtype='COLOR',
+                                                           min=0, max=1,
+                                                           size=4,
+                                                           default=(0, 0.154, 0.255, 1),
+                                                           update=update_color_clay,
+                                                           description="Clay color (changes real-time)")
 
-bpy.types.Scene.ColorClay = bpy.props.FloatVectorProperty(subtype='COLOR',
-                                                          min=0, max=1,
-                                                          size=4,
-                                                          default=(0, 0.154, 0.255, 1),
-                                                          update=update_color_clay,
-                                                          description="Clay color (changes real-time)")
-# todo clean up scene property names
 # creates two layer tables
-bpy.types.Scene.LayersAffected = bpy.props.BoolVectorProperty(subtype='LAYER',
-                                                              size=20,
-                                                              default=(True,) + (False,) * 19,
-                                                              description="Layers whose meshes will be affected")
-bpy.types.Scene.LayersOther = bpy.props.BoolVectorProperty(subtype='LAYER',
-                                                           size=20,
-                                                           default=(False,) * 20,
-                                                           description="Layers whose objects will be "
-                                                                       "included as is, e.g. lights")
+bpy.types.Scene.layers_affected = bpy.props.BoolVectorProperty(subtype='LAYER',
+                                                               size=20,
+                                                               default=(True,) + (False,) * 19,
+                                                               description="Layers whose meshes will be affected")
+bpy.types.Scene.layers_other = bpy.props.BoolVectorProperty(subtype='LAYER',
+                                                            size=20,
+                                                            default=(False,) * 20,
+                                                            description="Layers whose objects will be "
+                                                                        "included as is, e.g. lights")
+
 # creates all checkboxes
 bpy.types.Scene.cb_comp = bpy.props.BoolProperty(default=False, description="Add the wires through composition")
 bpy.types.Scene.cb_backup = bpy.props.BoolProperty(default=True, description="Create a backup scene")
@@ -165,32 +162,34 @@ bpy.types.Scene.cb_mat_wire = bpy.props.BoolProperty(default=False,
                                                      description="Use material from scene as wire material")
 bpy.types.Scene.cb_mat_clay = bpy.props.BoolProperty(default=False,
                                                      description="Use material from scene as clay material")
+
 # creates sliders for the wireframe thickness
-bpy.types.Scene.SliderWireThicknessFreestyle = bpy.props.FloatProperty(name='Wire Thickness',
-                                                                       subtype='FACTOR',
-                                                                       precision=3,
-                                                                       soft_min=0.1,
-                                                                       soft_max=10,
-                                                                       default=1.5,
-                                                                       update=update_wire_thickness,
-                                                                       description="Wire thickness "
-                                                                                   "(changes real-time)")
-bpy.types.Scene.SliderWireThicknessModifier = bpy.props.FloatProperty(name='Wire Thickness',
-                                                                      subtype='FACTOR',
-                                                                      precision=3,
-                                                                      soft_min=0.001,
-                                                                      soft_max=0.1,
-                                                                      default=0.004,
-                                                                      update=update_wire_thickness,
-                                                                      description="Wire thickness "
-                                                                                  "(changes real-time)")
-# creates custom naming text fields
-bpy.types.Scene.CustomSceneName = bpy.props.StringProperty(description='Use a custom made scene name',
-                                                           default='wire',
-                                                           maxlen=47)
-bpy.types.Scene.CustomSceneName2 = bpy.props.StringProperty(description='Use a custom made scene name',
-                                                            default='clay',
+bpy.types.Scene.slider_wt_freestyle = bpy.props.FloatProperty(name='Wire Thickness',
+                                                              subtype='FACTOR',
+                                                              precision=3,
+                                                              soft_min=0.1,
+                                                              soft_max=10,
+                                                              default=1.5,
+                                                              update=update_wire_thickness,
+                                                              description="Wire thickness "
+                                                              "(changes real-time)")
+bpy.types.Scene.slider_wt_modifier = bpy.props.FloatProperty(name='Wire Thickness',
+                                                             subtype='FACTOR',
+                                                             precision=3,
+                                                             soft_min=0.001,
+                                                             soft_max=0.1,
+                                                             default=0.004,
+                                                             update=update_wire_thickness,
+                                                             description="Wire thickness "
+                                                             "(changes real-time)")
+
+# creates custom scene-naming text fields
+bpy.types.Scene.field_scene_name = bpy.props.StringProperty(description='Use a custom made scene name',
+                                                            default='wire',
                                                             maxlen=47)
+bpy.types.Scene.field_scene_name2 = bpy.props.StringProperty(description='Use a custom made scene name',
+                                                             default='clay',
+                                                             maxlen=47)
 
 
 class WireframePanel(bpy.types.Panel):
@@ -211,7 +210,7 @@ class WireframePanel(bpy.types.Panel):
         layout = self.layout
 
         row = layout.row()
-        row.prop(context.scene, property='WireframeType', text='')
+        row.prop(context.scene, property='wireframe_type', text='')
 
         layout.separator()
 
@@ -222,7 +221,7 @@ class WireframePanel(bpy.types.Panel):
         row = col.row()
         row.prop(context.scene, property='cb_backup', text='Backup scene')
 
-        if context.scene.WireframeType == 'WIREFRAME_BI':
+        if context.scene.wireframe_type == 'WIREFRAME_BI':
             row.enabled = False
 
         row = col.row()
@@ -236,17 +235,18 @@ class WireframePanel(bpy.types.Panel):
             w_var.error_101 = False
         row.prop(context.scene, property='cb_only_selected', text='Only selected')
 
-        if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
+        if context.scene.wireframe_type == 'WIREFRAME_FREESTYLE':
             row_cb_comp = col.row()
             row_cb_comp.prop(context.scene, property='cb_comp', text='Composited wires')
+            # TODO: Check if this works.
+            w_var.cb_comp_active = row_cb_comp.active
 
-            layers_affected = list(context.scene.LayersAffected)
-            layers_other = list(context.scene.LayersOther)
+            layers_affected = list(context.scene.layers_affected)
+            layers_other = list(context.scene.layers_other)
 
             if not (any(layers_affected)
                     and any(b_tools.manipulate_layerlists('subtract', layers_other, layers_affected))):
                 row_cb_comp.active = False
-                w_var.cb_comp_active = False
 
         col = split.column()
 
@@ -265,13 +265,13 @@ class WireframePanel(bpy.types.Panel):
 
         layout.separator()
         row = layout.row()
-        row.prop(context.scene, property='ColorWire', text='Wire color')
+        row.prop(context.scene, property='color_wire', text='Wire color')
 
         split = layout.split()
         col = split.column()
 
         row_cb_mat_wire = col.row()
-        if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
+        if context.scene.wireframe_type == 'WIREFRAME_FREESTYLE':
             row_cb_mat_wire.active = False
 
         if w_var.error_201 and context.scene.cb_mat_wire and len(bpy.data.materials) == 0:
@@ -283,16 +283,16 @@ class WireframePanel(bpy.types.Panel):
         col = split.column()
 
         row_matwire = col.row()
-        row_matwire.prop(context.scene.Materials, property='mat_wire', text='')
+        row_matwire.prop(context.scene.materials, property='wire', text='')
 
-        if context.scene.WireframeType == 'WIREFRAME_FREESTYLE' or not context.scene.cb_mat_wire:
+        if context.scene.wireframe_type == 'WIREFRAME_FREESTYLE' or not context.scene.cb_mat_wire:
             row_matwire.active = False
 
         if context.scene.cb_clay:
             layout.separator()
 
             row = layout.row()
-            row.prop(context.scene, property='ColorClay', text='Clay color')
+            row.prop(context.scene, property='color_clay', text='Clay color')
 
             split = layout.split()
             col = split.column()
@@ -307,21 +307,21 @@ class WireframePanel(bpy.types.Panel):
             col = split.column()
 
             row_matclay = col.row()
-            row_matclay.prop(context.scene.Materials, property='mat_clay', text='')
+            row_matclay.prop(context.scene.materials, property='clay', text='')
 
             if not context.scene.cb_mat_clay:
                 row_matclay.active = False
 
-        if context.scene.WireframeType in 'WIREFRAME_FREESTYLE WIREFRAME_MODIFIER':
+        if context.scene.wireframe_type in 'WIREFRAME_FREESTYLE WIREFRAME_MODIFIER':
             layout.separator()
             row = layout.row()
             row.label('Wire thickness:')
 
-            if context.scene.WireframeType == 'WIREFRAME_FREESTYLE':
-                row.prop(context.scene, property='SliderWireThicknessFreestyle', text='Thickness')
+            if context.scene.wireframe_type == 'WIREFRAME_FREESTYLE':
+                row.prop(context.scene, property='slider_wt_freestyle', text='Thickness')
 
-            elif context.scene.WireframeType == 'WIREFRAME_MODIFIER':
-                row.prop(context.scene, property='SliderWireThicknessModifier', text='Thickness')
+            elif context.scene.wireframe_type == 'WIREFRAME_MODIFIER':
+                row.prop(context.scene, property='slider_wt_modifier', text='Thickness')
 
         layout.separator()
         split = layout.split()
@@ -332,7 +332,7 @@ class WireframePanel(bpy.types.Panel):
         row.operator(operator='wireframe_op.select_layers_affected', text='All')
         row.operator(operator='wireframe_op.deselect_layers_affected', text='None')
 
-        col.prop(context.scene, property='LayersAffected', text='')
+        col.prop(context.scene, property='layers_affected', text='')
 
         if context.scene.cb_only_selected:
             col.active = False
@@ -346,28 +346,27 @@ class WireframePanel(bpy.types.Panel):
         row.operator(operator='wireframe_op.select_layers_other', text='All')
         row.operator(operator='wireframe_op.deselect_layers_other', text='None')
 
-        col.prop(context.scene, property='LayersOther', text='')
+        col.prop(context.scene, property='layers_other', text='')
 
         layout.separator()
 
         row = layout.row()
-        if w_var.error_301 and len(context.scene.CustomSceneName) == 0:
+        if w_var.error_301 and len(context.scene.field_scene_name) == 0:
             row.alert = True
         else:
             w_var.error_301 = False
-        row.prop(context.scene, property='CustomSceneName', text='Wire scene name')
+        row.prop(context.scene, property='field_scene_name', text='Wire scene name')
 
-        if context.scene.WireframeType == 'WIREFRAME_BI':
+        if context.scene.wireframe_type == 'WIREFRAME_BI':
             row = layout.row()
-            if w_var.error_302 and len(context.scene.CustomSceneName2) == 0:
+            if w_var.error_302 and len(context.scene.field_scene_name2) == 0:
                 row.alert = True
             else:
                 w_var.error_302 = False
-            row.prop(context.scene, property='CustomSceneName2', text='Clay scene name')
+            row.prop(context.scene, property='field_scene_name2', text='Clay scene name')
 
         layout.separator()
 
         row = layout.row()
-
         row.scale_y = 1.3
         row.operator(operator='wireframe_op.create_wireframe', text='Set up', icon='WIRE')
