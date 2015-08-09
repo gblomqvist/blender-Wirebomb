@@ -1,5 +1,6 @@
 # noinspection PyUnresolvedReferences
 import bpy
+import constants
 
 
 def object_on_layer(scene, obj, layer_numbers):
@@ -22,20 +23,17 @@ def object_on_layer(scene, obj, layer_numbers):
         return False
 
 
-def check_any_selected(scene, object_types=None):
+def check_any_selected(scene, obj_types=constants.obj_types):
     """Checks the scene for if any object is selected.
 
     Args:
         scene: The scene to be checked.
-        object_types: An optional list consisting of strings representing the object type(s)
+        obj_types: An optional tuple consisting of strings representing the object type(s)
             that the object is allowed to be. If none specified, all types count.
     """
-    if object_types is None:
-        object_types = ['MESH', 'CURVE', 'SURFACE', 'META', 'FONT', 'ARMATURE',
-                        'LATTICE', 'EMPTY', 'CAMERA', 'LAMP', 'SPEAKER']
-
+    # TODO: Optional tuple or list?
     for obj in scene.objects:
-        if obj.type in object_types and obj.select is True:
+        if obj.type in obj_types and obj.select is True:
             return True
 
     return False
@@ -66,7 +64,7 @@ def layerlist_to_numberlist(layer_list):
         if layer_list[i]:
             number_list.append(i)
 
-    return number_list
+    return set(number_list)
 
 
 def find_material_index(obj, material):

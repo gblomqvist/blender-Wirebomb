@@ -111,7 +111,7 @@ def update_wire_thickness(self, context):
         for obj in context.scene.objects:
             if ((context.scene.cb_only_selected and obj in w_var.only_selected)
                     or (not context.scene.cb_only_selected and
-                        b_tools.object_on_layer(context.scene, obj, w_var.affected_layers_numbers))):
+                        b_tools.object_on_layer(context.scene, obj, w_var.layer_numbers_affected))):
                 for modifier in obj.modifiers:
                     if modifier.type == 'WIREFRAME':
                         modifier.thickness = context.scene.slider_wt_modifier
@@ -151,13 +151,13 @@ bpy.types.Scene.layers_other = bpy.props.BoolVectorProperty(subtype='LAYER',
                                                                         "included as is, e.g. lights")
 
 # creates all checkboxes
-bpy.types.Scene.cb_comp = bpy.props.BoolProperty(default=False, description="Add the wires through composition")
+bpy.types.Scene.cb_comp = bpy.props.BoolProperty(default=False, description="Add the wireframe through composition")
 bpy.types.Scene.cb_backup = bpy.props.BoolProperty(default=True, description="Create a backup scene")
 bpy.types.Scene.cb_only_selected = bpy.props.BoolProperty(default=False, description="Only affect the selected meshes")
 bpy.types.Scene.cb_ao = bpy.props.BoolProperty(default=False, description="Use ambient occlusion lighting setup")
 bpy.types.Scene.cb_clear_rlayers = bpy.props.BoolProperty(default=True, description="Remove all previous render layers")
 bpy.types.Scene.cb_clay = bpy.props.BoolProperty(default=True, description="Activate the use of clay")
-bpy.types.Scene.cb_clay_only = bpy.props.BoolProperty(default=False, description="Only use clay, no wires")
+bpy.types.Scene.cb_clay_only = bpy.props.BoolProperty(default=False, description="Only use clay, no wireframe")
 bpy.types.Scene.cb_mat_wire = bpy.props.BoolProperty(default=False,
                                                      description="Use material from scene as wire material")
 bpy.types.Scene.cb_mat_clay = bpy.props.BoolProperty(default=False,
@@ -175,7 +175,7 @@ bpy.types.Scene.slider_wt_freestyle = bpy.props.FloatProperty(name='Wire Thickne
                                                               "(changes real-time)")
 bpy.types.Scene.slider_wt_modifier = bpy.props.FloatProperty(name='Wire Thickness',
                                                              subtype='FACTOR',
-                                                             precision=3,
+                                                             precision=4,
                                                              soft_min=0.001,
                                                              soft_max=0.1,
                                                              default=0.004,
@@ -183,11 +183,11 @@ bpy.types.Scene.slider_wt_modifier = bpy.props.FloatProperty(name='Wire Thicknes
                                                              description="Wire thickness "
                                                              "(changes real-time)")
 
-# creates custom scene-naming text fields
-bpy.types.Scene.field_scene_name = bpy.props.StringProperty(description='Use a custom made scene name',
+# creates scene naming text fields
+bpy.types.Scene.field_scene_name = bpy.props.StringProperty(description="The wireframe scene's name",
                                                             default='wire',
                                                             maxlen=47)
-bpy.types.Scene.field_scene_name2 = bpy.props.StringProperty(description='Use a custom made scene name',
+bpy.types.Scene.field_scene_name2 = bpy.props.StringProperty(description="The clay scene's name",
                                                              default='clay',
                                                              maxlen=47)
 
@@ -213,43 +213,39 @@ class WireframePanel(bpy.types.Panel):
         row.prop(context.scene, property='wireframe_type', text='')
 
         layout.separator()
-
         box = layout.box()
         split = box.split()
         col = split.column()
-
         row = col.row()
         row.prop(context.scene, property='cb_backup', text='Backup scene')
-
-        if context.scene.wireframe_type == 'WIREFRAME_BI':
-            row.enabled = False
 
         row = col.row()
         row.prop(context.scene, property='cb_clear_rlayers', text='Clear render layers')
 
         row = col.row()
+
         if (w_var.error_101 and context.scene.cb_only_selected
-                and not b_tools.check_any_selected(context.scene, ['MESH'])):
+                and not b_tools.check_any_selected(context.scene, ('MESH',))):
             row.alert = True
         else:
             w_var.error_101 = False
+
         row.prop(context.scene, property='cb_only_selected', text='Only selected')
 
         if context.scene.wireframe_type == 'WIREFRAME_FREESTYLE':
             row_cb_comp = col.row()
             row_cb_comp.prop(context.scene, property='cb_comp', text='Composited wires')
-            # TODO: Check if this works.
-            w_var.cb_comp_active = row_cb_comp.active
-
             layers_affected = list(context.scene.layers_affected)
             layers_other = list(context.scene.layers_other)
 
             if not (any(layers_affected)
                     and any(b_tools.manipulate_layerlists('subtract', layers_other, layers_affected))):
                 row_cb_comp.active = False
+                w_var.cb_comp_active = False
+            else:
+                w_var.cb_comp_active = True
 
         col = split.column()
-
         row = col.row()
         row.prop(context.scene, property='cb_ao', text='AO as light')
 
@@ -262,6 +258,9 @@ class WireframePanel(bpy.types.Panel):
 
         if context.scene.cb_clay is not True:
             row.active = False
+            w_var.cb_clay_only_active = False
+        else:
+            w_var.cb_clay_only_active = True
 
         layout.separator()
         row = layout.row()
@@ -269,19 +268,22 @@ class WireframePanel(bpy.types.Panel):
 
         split = layout.split()
         col = split.column()
-
         row_cb_mat_wire = col.row()
+
         if context.scene.wireframe_type == 'WIREFRAME_FREESTYLE':
             row_cb_mat_wire.active = False
+            w_var.cb_mat_wire_active = False
+        else:
+            w_var.cb_mat_wire_active = True
 
-        if w_var.error_201 and context.scene.cb_mat_wire and len(bpy.data.materials) == 0:
+        if w_var.error_201 and context.scene.cb_mat_wire:
             row_cb_mat_wire.alert = True
         else:
             w_var.error_201 = False
+
         row_cb_mat_wire.prop(context.scene, property='cb_mat_wire', text='Material from scene:')
 
         col = split.column()
-
         row_matwire = col.row()
         row_matwire.prop(context.scene.materials, property='wire', text='')
 
@@ -290,22 +292,27 @@ class WireframePanel(bpy.types.Panel):
 
         if context.scene.cb_clay:
             layout.separator()
-
             row = layout.row()
             row.prop(context.scene, property='color_clay', text='Clay color')
-
             split = layout.split()
             col = split.column()
 
             row_cb_mat_clay = col.row()
-            if w_var.error_202 and context.scene.cb_mat_clay and len(bpy.data.materials) == 0:
+
+            if not context.scene.cb_clay:
+                row_cb_mat_clay.active = False
+                w_var.cb_mat_clay_active = False
+            else:
+                w_var.cb_mat_clay_active = True
+
+            if w_var.error_202 and context.scene.cb_mat_clay:
                 row_cb_mat_clay.alert = True
             else:
                 w_var.error_202 = False
+
             row_cb_mat_clay.prop(context.scene, property='cb_mat_clay', text='Material from scene:')
 
             col = split.column()
-
             row_matclay = col.row()
             row_matclay.prop(context.scene.materials, property='clay', text='')
 
@@ -326,12 +333,10 @@ class WireframePanel(bpy.types.Panel):
         layout.separator()
         split = layout.split()
         col = split.column()
-
         col.label(text='Affected layers:')
         row = col.row(align=True)
         row.operator(operator='wireframe_op.select_layers_affected', text='All')
         row.operator(operator='wireframe_op.deselect_layers_affected', text='None')
-
         col.prop(context.scene, property='layers_affected', text='')
 
         if context.scene.cb_only_selected:
@@ -339,34 +344,33 @@ class WireframePanel(bpy.types.Panel):
             row.active = False
 
         col = split.column()
-
         col.label(text='Other included layers:')
-
         row = col.row(align=True)
         row.operator(operator='wireframe_op.select_layers_other', text='All')
         row.operator(operator='wireframe_op.deselect_layers_other', text='None')
-
         col.prop(context.scene, property='layers_other', text='')
 
         layout.separator()
-
         row = layout.row()
+
         if w_var.error_301 and len(context.scene.field_scene_name) == 0:
             row.alert = True
         else:
             w_var.error_301 = False
+
         row.prop(context.scene, property='field_scene_name', text='Wire scene name')
 
         if context.scene.wireframe_type == 'WIREFRAME_BI':
             row = layout.row()
+
             if w_var.error_302 and len(context.scene.field_scene_name2) == 0:
                 row.alert = True
             else:
                 w_var.error_302 = False
+
             row.prop(context.scene, property='field_scene_name2', text='Clay scene name')
 
         layout.separator()
-
         row = layout.row()
         row.scale_y = 1.3
         row.operator(operator='wireframe_op.create_wireframe', text='Set up', icon='WIRE')

@@ -21,6 +21,9 @@ wire_bi_mat = None
 clay_mat = None
 
 # from interface:
+# wireframe type
+wireframe_type = None
+
 # checkboxes
 cb_backup = None
 cb_clear_rlayers = None
@@ -32,17 +35,20 @@ cb_comp = None
 cb_mat_wire = None
 cb_mat_clay = None
 
-cb_comp_active = False
+cb_clay_only_active = None
+cb_comp_active = None
+cb_mat_wire_active = None
+cb_mat_clay_active = None
 
-# selected materials
-wire_mat_set = None
-clay_mat_set = None
+# materials set
+mat_wire_set = None
+mat_clay_set = None
 
 # layers selected
-other_layers_numbers = []
-affected_layers_numbers = []
-all_layers_used_numbers = []
+layer_numbers_other = None
+layer_numbers_affected = None
+layer_numbers_all_used = None
 
-# custom scene-naming fields
+# scene names set
 scene_name_1 = None
 scene_name_2 = None
