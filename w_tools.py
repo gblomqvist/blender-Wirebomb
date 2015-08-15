@@ -24,16 +24,16 @@ def set_layers_affected():
     return layers_affected
 
 
-def set_layers_other():
+def set_layers_other(layers_affected):
     """Sets all layers who will be included in the render layer just as they are in a list.
 
     Returns:
         A list with booleans representing all the layers that will be included in the render layer-just as they are.
     """
     layers_other = list(w_var.original_scene.layers_other)
-    
+
     for index in range(0, 20):
-        if layers_other[index] and w_var.original_scene.layers_affected[index]:
+        if layers_other[index] and layers_affected[index]:
             layers_other[index] = False
 
     return layers_other

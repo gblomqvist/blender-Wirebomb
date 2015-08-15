@@ -3,8 +3,7 @@ import bpy
 from .b_scene import BlenderScene
 from . import b_tools
 from . import w_var
-import constants
-# TODO: From . import ... or just import?
+from . import constants
 
 
 class BlenderSceneW(BlenderScene):
@@ -31,7 +30,7 @@ class BlenderSceneW(BlenderScene):
                 types variable is not set. If set, types variable will not matter.
         """
         scene = self.set_as_active()
-        layer_numbers = constants.layer_numbers
+        layer_numbers = set(constants.layer_numbers)
         obj_types = set(constants.obj_types)
 
         # setting up types and types excluded
@@ -93,14 +92,12 @@ class BlenderSceneW(BlenderScene):
                         obj.select = False
 
         else:
-            raise ValueError("Error: No such mode as '{}'.".format(mode))
-        # TODO: Is this error correct?
+            raise ValueError("No such mode as '{}'.".format(mode))
 
         bpy.context.area.type = previous_area
         self.set_active_object(types)
 
-    def set_up_rlayer(self, rlname, visible_layers=None, include_layers=None,
-                      mask_layers=None, rlname_other=None):
+    def set_up_rlayer(self, rlname, visible_layers=None, include_layers=None, mask_layers=None, rlname_other=None):
         """Sets up one or two render layers, a special version of BlenderScene's set_up_rlayer function.
 
         Args:
@@ -127,7 +124,7 @@ class BlenderSceneW(BlenderScene):
             mask_layers = []
 
         if w_var.cb_clear_rlayers:
-            for layer in scene.render.layers[0:len(scene.render.layers)-1]:
+            for layer in scene.render.layers[:-1]:
                 scene.render.layers.remove(layer)
 
             scene.render.layers.active.name = rlname
@@ -135,7 +132,7 @@ class BlenderSceneW(BlenderScene):
 
             new_rlayer = scene.render.layers.active
 
-        # not clearing render layers --> creates new one
+        # if not clearing render layers: deactivates them and creates new one
         else:
             for rlayer in scene.render.layers:
                 rlayer.use = False
@@ -146,20 +143,25 @@ class BlenderSceneW(BlenderScene):
         if w_var.rlname is None:
             w_var.rlname = new_rlayer.name
 
-        # only used for blender internal wireframe, two scenes --> two render layer names
+        # only used for blender internal wireframe, two scenes require two render layers with names
         else:
             w_var.rlname_2 = new_rlayer.name
 
         # there needs to be two render layers for freestyle compositing
         if w_var.cb_comp:
-            new_rlayer = scene.render.layers.new(rlname_other)
-            w_var.rlname_other = new_rlayer.name
+            other_rlayer = scene.render.layers.new(rlname_other)
+            other_rlayer.layers[19] = True
+            w_var.rlname_other = other_rlayer.name
 
         if w_var.cb_ao:
             scene.render.layers[rlname].use_pass_ambient_occlusion = True
 
             if w_var.cb_comp:
                 scene.render.layers[rlname_other].use_pass_ambient_occlusion = True
+
+        # because I can't deactivate a layer if it is the only active one
+        scene.layers[19] = True
+        new_rlayer.layers[19] = True
 
         for i in layer_numbers:
             if w_var.cb_comp:
@@ -234,7 +236,7 @@ class BlenderSceneW(BlenderScene):
         """Sets up the compositor nodes for the wireframe type 'Blender Internal'.
 
         Args:
-            wire_scene_instance: An instance of the class BlenderSceneW.
+            wire_scene_instance: An instance of the class BlenderSceneW representing the wire scene.
         """
         scene = self.set_as_active()
 
@@ -294,58 +296,58 @@ class BlenderSceneW(BlenderScene):
         tree.nodes.clear()
 
         # creating the nodes
-        alphaover = tree.nodes.new('CompositorNodeAlphaOver')
-        alphaover.location = -25, 50
+        node_alphaover = tree.nodes.new('CompositorNodeAlphaOver')
+        node_alphaover.location = -25, 50
 
-        rlwire = tree.nodes.new('CompositorNodeRLayers')
-        rlwire.location = -400, 250
-        rlwire.scene = scene
-        rlwire.layer = w_var.rlname
+        node_rlwire = tree.nodes.new('CompositorNodeRLayers')
+        node_rlwire.location = -400, 250
+        node_rlwire.scene = scene
+        node_rlwire.layer = w_var.rlname
 
-        rlclay = tree.nodes.new('CompositorNodeRLayers')
-        rlclay.location = -400, -75
-        rlclay.scene = scene
-        rlclay.layer = w_var.rlname_other
+        node_rlclay = tree.nodes.new('CompositorNodeRLayers')
+        node_rlclay.location = -400, -75
+        node_rlclay.scene = scene
+        node_rlclay.layer = w_var.rlname_other
 
-        comp = tree.nodes.new('CompositorNodeComposite')
-        comp.location = 400, 65
+        node_comp = tree.nodes.new('CompositorNodeComposite')
+        node_comp.location = 400, 65
 
-        viewer = tree.nodes.new('CompositorNodeViewer')
-        viewer.location = 400, -125
+        node_viewer = tree.nodes.new('CompositorNodeViewer')
+        node_viewer.location = 400, -125
 
         # connecting the nodes
         links = tree.links
-        links.new(rlwire.outputs[0], alphaover.inputs[1])
-        links.new(rlclay.outputs[0], alphaover.inputs[2])
+        links.new(node_rlwire.outputs[0], node_alphaover.inputs[1])
+        links.new(node_rlclay.outputs[0], node_alphaover.inputs[2])
 
         if w_var.cb_ao:
-            colormix_wire = tree.nodes.new('CompositorNodeMixRGB')
-            colormix_wire.location = -125, 150
-            colormix_wire.blend_type = 'MULTIPLY'
-            colormix_wire.inputs[0].default_value = 0.73
+            node_colormix_wire = tree.nodes.new('CompositorNodeMixRGB')
+            node_colormix_wire.location = -125, 150
+            node_colormix_wire.blend_type = 'MULTIPLY'
+            node_colormix_wire.inputs[0].default_value = 0.730
 
-            colormix_clay = tree.nodes.new('CompositorNodeMixRGB')
-            colormix_clay.location = -125, -100
-            colormix_clay.blend_type = 'MULTIPLY'
-            colormix_clay.inputs[0].default_value = 0.73
+            node_colormix_clay = tree.nodes.new('CompositorNodeMixRGB')
+            node_colormix_clay.location = -125, -100
+            node_colormix_clay.blend_type = 'MULTIPLY'
+            node_colormix_clay.inputs[0].default_value = 0.730
 
-            alphaover.location = 125, 75
+            node_alphaover.location = 125, 75
 
-            links.new(rlwire.outputs[0], colormix_wire.inputs[1])
-            links.new(rlwire.outputs[10], colormix_wire.inputs[2])
+            links.new(node_rlwire.outputs[0], node_colormix_wire.inputs[1])
+            links.new(node_rlwire.outputs[10], node_colormix_wire.inputs[2])
 
-            links.new(rlclay.outputs[0], colormix_clay.inputs[1])
-            links.new(rlclay.outputs[10], colormix_clay.inputs[2])
+            links.new(node_rlclay.outputs[0], node_colormix_clay.inputs[1])
+            links.new(node_rlclay.outputs[10], node_colormix_clay.inputs[2])
 
-            links.new(colormix_wire.outputs[0], alphaover.inputs[1])
-            links.new(colormix_clay.outputs[0], alphaover.inputs[2])
+            links.new(node_colormix_wire.outputs[0], node_alphaover.inputs[1])
+            links.new(node_colormix_clay.outputs[0], node_alphaover.inputs[2])
 
-            links.new(alphaover.outputs[0], comp.inputs[0])
-            links.new(alphaover.outputs[0], viewer.inputs[0])
+            links.new(node_alphaover.outputs[0], node_comp.inputs[0])
+            links.new(node_alphaover.outputs[0], node_viewer.inputs[0])
 
         else:
-            links.new(alphaover.outputs[0], comp.inputs[0])
-            links.new(alphaover.outputs[0], viewer.inputs[0])
+            links.new(node_alphaover.outputs[0], node_comp.inputs[0])
+            links.new(node_alphaover.outputs[0], node_viewer.inputs[0])
 
         for node in tree.nodes:
             node.select = False
@@ -359,49 +361,52 @@ class BlenderSceneW(BlenderScene):
         tree.nodes.clear()
 
         # creating the nodes
-        colormix = tree.nodes.new('CompositorNodeMixRGB')
-        colormix.location = 0, 60
-        colormix.blend_type = 'MULTIPLY'
-        colormix.inputs[0].default_value = 0.73
+        node_colormix = tree.nodes.new('CompositorNodeMixRGB')
+        node_colormix.location = 0, 60
+        node_colormix.blend_type = 'MULTIPLY'
+        node_colormix.inputs[0].default_value = 0.730
 
-        rlayer = tree.nodes.new('CompositorNodeRLayers')
-        rlayer.location = -300, 100
-        rlayer.layer = w_var.rlname
+        node_rlayer = tree.nodes.new('CompositorNodeRLayers')
+        node_rlayer.location = -300, 100
+        node_rlayer.scene = scene
+        node_rlayer.layer = w_var.rlname
 
-        comp = tree.nodes.new('CompositorNodeComposite')
-        comp.location = 300, 130
+        node_comp = tree.nodes.new('CompositorNodeComposite')
+        node_comp.location = 300, 130
 
-        viewer = tree.nodes.new('CompositorNodeViewer')
-        viewer.location = 300, -100
+        node_viewer = tree.nodes.new('CompositorNodeViewer')
+        node_viewer.location = 300, -100
 
         # connecting the nodes
         links = tree.links
-        links.new(rlayer.outputs[0], colormix.inputs[1])
-        links.new(rlayer.outputs[10], colormix.inputs[2])
-        links.new(colormix.outputs[0], comp.inputs[0])
-        links.new(colormix.outputs[0], viewer.inputs[0])
+        links.new(node_rlayer.outputs[0], node_colormix.inputs[1])
+        links.new(node_rlayer.outputs[10], node_colormix.inputs[2])
+        links.new(node_colormix.outputs[0], node_comp.inputs[0])
+        links.new(node_colormix.outputs[0], node_viewer.inputs[0])
 
         for node in tree.nodes:
             node.select = False
 
-    def add_clay_mat_to_selected(self):
-        """Creates and sets the clay material to all selected objects in cycles.
+    def add_clay_to_selected(self):
+        """Creates and/or sets the clay material to all selected objects in cycles.
 
         Returns:
             The clay material data object.
         """
         scene = self.set_as_active()
-        # TODO: Check how this was written in earlier version, did it just check ordinary checkbox?
+
+        # if the user selected a material, use it
         if w_var.cb_mat_clay:
             clay_mat = w_var.mat_clay_set
 
+        # else, create a new one with the color selected
         else:
-            clay_color = w_var.original_scene.color_clay
-            # separating rgb from alpha
+            clay_color = w_var.color_clay_set
+
+            # separating rgb and alpha
             clay_color_rgb = clay_color[0:3]
 
             clay_mat = bpy.data.materials.new('clay')
-
             clay_mat.use_nodes = True
             tree = clay_mat.node_tree
             tree.nodes.clear()
@@ -434,8 +439,8 @@ class BlenderSceneW(BlenderScene):
                     mesh_select = 0
                     break
 
-        # not when wireframe_type == 'WIREFRAME_MODIFIER' because wireframe and clay would have same material
-        if mesh_select == 1 and w_var.original_scene.wireframe_type != 'WIREFRAME_MODIFIER':
+        # not when wireframe_type == 'WIREFRAME_MODIFIER' because wireframe and clay would get same material
+        if mesh_select == 1 and w_var.wireframe_type != 'WIREFRAME_MODIFIER':
             scene.render.layers.active.material_override = clay_mat
 
         else:
@@ -446,6 +451,7 @@ class BlenderSceneW(BlenderScene):
 
             for obj in scene.objects:
                 if obj.select:
+                    # only enters edit mode on active object
                     scene.objects.active = obj
                     obj.data.materials.append(clay_mat)
                     clay_index = b_tools.find_material_index(obj, clay_mat)
@@ -453,9 +459,7 @@ class BlenderSceneW(BlenderScene):
 
                     bpy.ops.object.mode_set(mode='EDIT')
                     bpy.ops.mesh.select_all(action='SELECT')
-
                     bpy.ops.object.material_slot_assign()
-
                     bpy.ops.mesh.select_all(action='SELECT')
                     bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -464,25 +468,27 @@ class BlenderSceneW(BlenderScene):
 
         return clay_mat
 
-    def add_wireframe_bi_to_selected(self):
-        """Creates and sets the wireframe material to all selected objects in blender internal.
+    def add_wireframe_bi(self):
+        """Creates and sets up the wireframe material in blender internal.
 
         Returns:
             The wireframe material data object.
         """
         self.set_as_active()
 
+        # if the user selected a material, use it
         if w_var.cb_mat_wire:
             wireframe_mat = w_var.mat_wire_set
 
+        # else, create a new one with the color selected
         else:
-            wire_color = w_var.original_scene.color_wire
+            wire_color = w_var.color_wire_set
+
             # separating rgb and alpha
             wire_color_rgb = wire_color[0:3]
             wire_color_alpha = wire_color[-1]
 
             wireframe_mat = bpy.data.materials.new('wireframe')
-
             wireframe_mat.type = 'WIRE'
             wireframe_mat.diffuse_color = wire_color_rgb
             wireframe_mat.use_transparency = True
@@ -490,69 +496,75 @@ class BlenderSceneW(BlenderScene):
             wireframe_mat.use_shadeless = True
             wireframe_mat.offset_z = 0.03
 
+        self.select('SELECT', {'MESH'}, {'ELSE'}, {0}, {'ELSE'})
         bpy.context.active_object.data.materials.append(wireframe_mat)
+        previous_area = bpy.context.area.type
+
+        # can't copy material slot in 'PROPERTY' space
+        bpy.context.area.type = 'VIEW_3D'
         bpy.ops.object.material_slot_copy()
+        bpy.context.area.type = previous_area
 
         return wireframe_mat
 
     def add_wireframe_modifier(self):
-        """Creates and sets the wireframe modifier and material to all selected objects in cycles render engine.
+        """Creates and sets up the wireframe modifier and material in cycles.
 
         Returns:
             The wireframe material data object.
         """
         scene = self.set_as_active()
 
+        # if the user selected a material, use it
         if w_var.cb_mat_wire:
             wireframe_mat = w_var.mat_wire_set
 
+        # else, create a new one with the color selected
         else:
-            wire_color = w_var.original_scene.color_wire
-            # separating rgb from alpha
+            wire_color = w_var.color_wire_set
+
+            # separating rgb and alpha
             wireframe_color_rgb = wire_color[0:3]
 
             wireframe_mat = bpy.data.materials.new('wireframe')
-
             wireframe_mat.use_nodes = True
             tree = wireframe_mat.node_tree
             tree.nodes.clear()
 
             # creating the nodes
-            diffuse_node = tree.nodes.new('ShaderNodeBsdfDiffuse')
-            diffuse_node.location = -150, 50
-            diffuse_node.inputs['Color'].default_value = wire_color
-            diffuse_node.inputs['Roughness'].default_value = 0.05
-            diffuse_node.color = wireframe_color_rgb
+            node_diffuse = tree.nodes.new('ShaderNodeBsdfDiffuse')
+            node_diffuse.location = -150, 50
+            node_diffuse.inputs['Color'].default_value = wire_color
+            node_diffuse.inputs['Roughness'].default_value = 0.05
+            node_diffuse.color = wireframe_color_rgb
 
-            output_node = tree.nodes.new('ShaderNodeOutputMaterial')
-            output_node.location = 150, 50
+            node_output = tree.nodes.new('ShaderNodeOutputMaterial')
+            node_output.location = 150, 50
 
             # sets the viewport color
             wireframe_mat.diffuse_color = wireframe_color_rgb
 
             # connecting the nodes.
-            tree.links.new(diffuse_node.outputs[0], output_node.inputs[0])
+            tree.links.new(node_diffuse.outputs[0], node_output.inputs[0])
 
             for node in tree.nodes:
                 node.select = False
 
+        # if object has no materials, fillout_mat is used so that the wireframe and clay materials are different
         fillout_mat = bpy.data.materials.new('fillout')
+        self.select('SELECT', {'MESH'}, {'ELSE'}, layers_excluded={'ELSE'})
 
         for obj in scene.objects:
             if obj.select:
-                scene.objects.active = obj
-
-                if len(bpy.context.active_object.data.materials) == 0:
+                if len(obj.data.materials) == 0:
                     obj.data.materials.append(fillout_mat)
 
                 obj.data.materials.append(wireframe_mat)
-                bpy.context.active_object.active_material_index = b_tools.find_material_index(obj, wireframe_mat)
-
                 wireframe_modifier = obj.modifiers.new(name='Wireframe', type='WIREFRAME')
                 wireframe_modifier.use_even_offset = False
                 wireframe_modifier.use_replace = False
-                wireframe_modifier.material_offset = bpy.context.active_object.active_material_index
-                wireframe_modifier.thickness = w_var.original_scene.slider_wt_modifier
+                wireframe_modifier.material_offset = 1
+                wireframe_modifier.thickness = w_var.slider_wt_modifier
 
         return wireframe_mat
 
@@ -565,16 +577,14 @@ class BlenderSceneW(BlenderScene):
         scene = self.set_as_active()
         previous_area = bpy.context.area.type
         bpy.context.area.type = 'VIEW_3D'
-        self.select('SELECT', {'MESH'}, {'ELSE'})
+        self.select('SELECT', {'MESH'}, {'ELSE'}, layers_excluded={'ELSE'})
 
         for obj in scene.objects:
             if obj.select:
                 scene.objects.active = obj
                 bpy.ops.object.mode_set(mode='EDIT')
                 bpy.ops.mesh.select_all(action='SELECT')
-
                 bpy.ops.mesh.mark_freestyle_edge()
-
                 bpy.ops.mesh.select_all(action='DESELECT')
                 bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -588,8 +598,8 @@ class BlenderSceneW(BlenderScene):
         lineset.select_edge_mark = True
         lineset.select_crease = False
 
-        wire_color = w_var.original_scene.color_wire
-        wire_thickness = w_var.original_scene.slider_wt_freestyle
+        wire_color = w_var.color_wire_set
+        wire_thickness = w_var.slider_wt_freestyle
 
         wire_color_rgb = wire_color[0:3]
         wire_color_alpha = wire_color[-1]

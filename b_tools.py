@@ -1,8 +1,9 @@
 # noinspection PyUnresolvedReferences
 import bpy
-import constants
+from . import constants
 
 
+# TODO: Should be in b_scene?
 def object_on_layer(scene, obj, layer_numbers):
         """Checks if an object is on any of the layers represented by layer_numbers.
 
@@ -23,6 +24,7 @@ def object_on_layer(scene, obj, layer_numbers):
         return False
 
 
+# TODO: Should be in b_scene?
 def check_any_selected(scene, obj_types=constants.obj_types):
     """Checks the scene for if any object is selected.
 
@@ -67,6 +69,7 @@ def layerlist_to_numberlist(layer_list):
     return set(number_list)
 
 
+# TODO: Should be in b_scene?
 def find_material_index(obj, material):
     """Finds the material slot index of a material in an object.
 

@@ -1,6 +1,6 @@
 # noinspection PyUnresolvedReferences
 import bpy
-import constants
+from . import constants
 
 
 class BlenderScene:
@@ -42,9 +42,20 @@ class BlenderScene:
         Returns:
             A string that is the new scene's name.
         """
+        original_new_name = new_name
         bpy.context.screen.scene = scene
         bpy.ops.scene.new(type='FULL_COPY')
-        bpy.context.screen.scene.name = new_name
+
+        # this is for better handling of duplicate scene names when creating a new scene
+        n = 0
+        while True:
+            if new_name not in [scene.name for scene in bpy.data.scenes]:
+                bpy.context.screen.scene.name = new_name
+                break
+            else:
+                new_name = original_new_name + '_' + str(n)
+                n += 1
+
         bpy.data.scenes[new_name].render.engine = renderer
 
         return new_name
@@ -136,7 +147,7 @@ class BlenderScene:
                 types variable is not set. If set, types variable will not matter.
         """
         scene = self.set_as_active()
-        layer_numbers = constants.layer_numbers
+        layer_numbers = set(constants.layer_numbers)
         obj_types = set(constants.obj_types)
 
         # setting up types and types excluded
@@ -194,7 +205,7 @@ class BlenderScene:
                         obj.select = False
 
         else:
-            raise ValueError("Error: No such mode as '{}'.".format(mode))
+            raise ValueError("No such mode as '{}'.".format(mode))
 
         bpy.context.area.type = previous_area
         self.set_active_object(types)
@@ -253,13 +264,13 @@ class BlenderScene:
             A list with the selected objects.
         """
         scene = self.set_as_active()
-        selected_list = []
+        selected_objects = []
 
         for obj in scene.objects:
             if obj.select and obj.type in obj_types:
-                selected_list.append(obj)
+                selected_objects.append(obj)
 
-        return selected_list
+        return selected_objects
 
     def set_up_rlayer(self, new, rlname, visible_layers=None, include_layers=None, mask_layers=None):
         """Sets up the scene's render layers.
@@ -269,7 +280,7 @@ class BlenderScene:
                 represented by rlname.
             rlname: A string representing the name of the render layer you want to set up.
             visible_layers: An optional list consisting of integers representing the layers you want to be visible
-                -i.e. all layers you want to render, which also will be visible in the viewport-in the new render layer.
+                -i.e. all layers you want to render, which will aslo be visible in the viewport-in the new render layer.
             include_layers: An optional list consisting of integers representing the layers
                 you want to be included in the new render layer (specific for this render layer).
             mask_layers: An optional list consisting of integers representing the layers
@@ -290,6 +301,10 @@ class BlenderScene:
         if new:
             new_rlayer = scene.render.layers.new(rlname)
             scene.render.layers.active = new_rlayer
+
+        # because I can't deactivate a layer if it is the only active one
+        scene.layers[19] = True
+        scene.render.layers[rlname].layers[19] = True
 
         for i in layer_numbers:
             if include_layers is not None:
