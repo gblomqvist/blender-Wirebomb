@@ -9,6 +9,26 @@ from . import constants
 class BlenderSceneW(BlenderScene):
     """A version of the class BlenderScene that is specific for this add-on."""
 
+    def __init__(self, scene, backup_scene, new_name=None, renderer=None):
+        """Creates a full copy of scene if new_scene is set to True.
+
+        Special version of BlenderScene's __init__ function, saves created scenes to a variable.
+
+        Args:
+            scene: A scene object which represents the scene to start from.
+            new_scene: A boolean that if True, a full copy of scene will be created.
+            new_name: An optional string representing the (new) scene's name. Must be set if new_scene is set
+                to True.
+            renderer: An optional string representing the (new) scene's render engine, e.g. 'CYCLES'. Must be set if
+                new_scene is set to True.
+        """
+        super(BlenderSceneW, self).__init__(scene, backup_scene, new_name, renderer)
+
+        if backup_scene:
+
+            # saves created scene
+            w_var.created_scenes.add(bpy.data.scenes[self.name])
+
     def select(self, mode, types=None, types_excluded=None, layers=None, layers_excluded=None, objects=None):
         """Selects or deselects objects, a special version of BlenderScene's select function.
 
@@ -140,14 +160,14 @@ class BlenderSceneW(BlenderScene):
             new_rlayer = scene.render.layers.new(rlname)
             scene.render.layers.active = new_rlayer
 
-        if w_var.rlname is None:
+        if w_var.rlname == '':
             w_var.rlname = new_rlayer.name
 
-        # only used for blender internal wireframe, two scenes require two render layers with names
+        # only used for blender internal wireframe, two scenes require two render layers
         else:
             w_var.rlname_2 = new_rlayer.name
 
-        # there needs to be two render layers for freestyle compositing
+        # there needs to be two render layers in the same scene for freestyle compositing
         if w_var.cb_comp:
             other_rlayer = scene.render.layers.new(rlname_other)
             other_rlayer.layers[19] = True
@@ -397,11 +417,11 @@ class BlenderSceneW(BlenderScene):
 
         # if the user selected a material, use it
         if w_var.cb_mat_clay:
-            clay_mat = w_var.mat_clay_set
+            clay_mat = bpy.data.materials[w_var.mat_clay_name]
 
         # else, create a new one with the color selected
         else:
-            clay_color = w_var.color_clay_set
+            clay_color = w_var.color_clay
 
             # separating rgb and alpha
             clay_color_rgb = clay_color[0:3]
@@ -451,10 +471,11 @@ class BlenderSceneW(BlenderScene):
 
             for obj in scene.objects:
                 if obj.select:
+
                     # only enters edit mode on active object
                     scene.objects.active = obj
                     obj.data.materials.append(clay_mat)
-                    clay_index = b_tools.find_material_index(obj, clay_mat)
+                    clay_index = obj.data.materials.find(clay_mat.name)
                     obj.active_material_index = clay_index
 
                     bpy.ops.object.mode_set(mode='EDIT')
@@ -478,11 +499,11 @@ class BlenderSceneW(BlenderScene):
 
         # if the user selected a material, use it
         if w_var.cb_mat_wire:
-            wireframe_mat = w_var.mat_wire_set
+            wireframe_mat = bpy.data.materials[w_var.mat_wire_name]
 
         # else, create a new one with the color selected
         else:
-            wire_color = w_var.color_wire_set
+            wire_color = w_var.color_wire
 
             # separating rgb and alpha
             wire_color_rgb = wire_color[0:3]
@@ -494,7 +515,7 @@ class BlenderSceneW(BlenderScene):
             wireframe_mat.use_transparency = True
             wireframe_mat.alpha = wire_color_alpha
             wireframe_mat.use_shadeless = True
-            wireframe_mat.offset_z = 0.03
+            wireframe_mat.offset_z = 0.03  # TODO: Tweak this value a last time.
 
         self.select('SELECT', {'MESH'}, {'ELSE'}, {0}, {'ELSE'})
         bpy.context.active_object.data.materials.append(wireframe_mat)
@@ -517,11 +538,11 @@ class BlenderSceneW(BlenderScene):
 
         # if the user selected a material, use it
         if w_var.cb_mat_wire:
-            wireframe_mat = w_var.mat_wire_set
+            wireframe_mat = bpy.data.materials[w_var.mat_wire_name]
 
         # else, create a new one with the color selected
         else:
-            wire_color = w_var.color_wire_set
+            wire_color = w_var.color_wire
 
             # separating rgb and alpha
             wireframe_color_rgb = wire_color[0:3]
@@ -598,7 +619,7 @@ class BlenderSceneW(BlenderScene):
         lineset.select_edge_mark = True
         lineset.select_crease = False
 
-        wire_color = w_var.color_wire_set
+        wire_color = w_var.color_wire
         wire_thickness = w_var.slider_wt_freestyle
 
         wire_color_rgb = wire_color[0:3]

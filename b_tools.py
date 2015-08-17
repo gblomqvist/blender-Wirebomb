@@ -41,14 +41,14 @@ def check_any_selected(scene, obj_types=constants.obj_types):
     return False
 
 
-def layerlist_to_numberlist(layer_list):
+def layerlist_to_numberset(layer_list):
     """Converts a layer list to a number list.
 
     Converts a layer list consisting of booleans to a number list consisting of integers,
     representing the layers that are True in layer_list.
 
     Example:
-        >>> print(layerlist_to_numberlist([False, True, False, False, True]))
+        >>> print(layerlist_to_numberset([False, True, False, False, True]))
         [1, 4]
 
         This because layer 2 (index 1) and layer 3 (index 4) are both True.
@@ -67,28 +67,6 @@ def layerlist_to_numberlist(layer_list):
             number_list.append(i)
 
     return set(number_list)
-
-
-# TODO: Should be in b_scene?
-def find_material_index(obj, material):
-    """Finds the material slot index of a material in an object.
-
-    Args:
-        obj: The object it will look through.
-        material: The material whose material slot index you want.
-
-    Returns:
-        An integer representing the material's material slot index in the object.
-    """
-    mat_index = 0
-
-    for mat in obj.data.materials:
-        if mat == material:
-            break
-
-        mat_index += 1
-
-    return mat_index
 
 
 def manipulate_layerlists(mode, list1, list2):

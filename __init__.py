@@ -4,8 +4,8 @@ bl_info = {
     "author": "Gustaf Blomqvist",
     "version": (1, 0, 0),
     "blender": (2, 73, 0),
-    "location": "3D View --> Toolshelf --> Wireframing",
-    "description": "Setting up wireframe renders has never been easier!",
+    "location": "Scene settings --> Wireframing",
+    "description": "Setting up wireframe/clay renders has never been easier!",
     "warning": "",
     "wiki_url": "",
     "tracker_url": "",
@@ -42,7 +42,7 @@ from .w_b_scene import BlenderSceneW
 
 def register():
     bpy.utils.register_module(__name__)
-    bpy.types.Scene.materials = bpy.props.PointerProperty(type=MaterialSettings)
+    bpy.types.Scene.materials = bpy.props.PointerProperty(type=MaterialLists)
 
 
 def unregister():
@@ -55,14 +55,18 @@ if __name__ == '__main__':
 
 def scene_materials(scene, context):
     mat_list = []
+    mat_id = 0
 
     for mat in bpy.data.materials:
-        mat_list.append((mat.name, mat.name, ''))
+
+        # sequence of enum items formatted: [(identifier, name, description, icon, number), ...]
+        mat_list.append((mat.name, mat.name, 'aa', 'MATERIAL', mat_id))
+        mat_id += 1  # TODO: Why do I need id? What can id do for me? ask blenderartists.org
 
     return mat_list
 
 
-class MaterialSettings(bpy.types.PropertyGroup):
+class MaterialLists(bpy.types.PropertyGroup):
     clay = bpy.props.EnumProperty(items=scene_materials,
                                   name='Clay material')
     wire = bpy.props.EnumProperty(items=scene_materials,
@@ -198,20 +202,20 @@ bpy.types.Scene.slider_wt_modifier = bpy.props.FloatProperty(name='Wire Thicknes
                                                              "(changes real-time)")
 
 # creates scene naming text fields
-bpy.types.Scene.field_scene_name = bpy.props.StringProperty(description="The wireframe scene's name",
-                                                            default='wireframe',
-                                                            maxlen=47)
-bpy.types.Scene.field_scene_name2 = bpy.props.StringProperty(description="The clay/other scene's name "
-                                                                         "(depending on if you use clay or not)",
-                                                             default='clay',
-                                                             maxlen=47)
+bpy.types.Scene.scene_name_1 = bpy.props.StringProperty(description="The wireframe scene's name",
+                                                        default='wireframe',
+                                                        maxlen=47)
+bpy.types.Scene.scene_name_2 = bpy.props.StringProperty(description="The clay/other scene's name "
+                                                                    "(depending on if you use clay or not)",
+                                                        default='clay',
+                                                        maxlen=47)
 
 
 class WireframePanel(bpy.types.Panel):
     """The panel in the GUI."""
 
     bl_label = 'Set Up Wireframe'
-    bl_idname = 'wireframe_panel'
+    bl_idname = 'wireframe_panel'  # TODO: Should say something else.
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'scene'
@@ -380,7 +384,7 @@ class WireframePanel(bpy.types.Panel):
         else:
             w_var.error_301 = False
 
-        row.prop(context.scene, property='field_scene_name', text='Wire scene name')
+        row.prop(context.scene, property='scene_name_1', text='Wire scene name')
 
         if context.scene.wireframe_type == 'WIREFRAME_BI':
             row = layout.row()
@@ -391,11 +395,19 @@ class WireframePanel(bpy.types.Panel):
                 w_var.error_302 = False
 
             if context.scene.cb_clay:
-                row.prop(context.scene, property='field_scene_name2', text='Clay scene name')
+                row.prop(context.scene, property='scene_name_2', text='Clay scene name')
             else:
-                row.prop(context.scene, property='field_scene_name2', text='Other scene name')
+                row.prop(context.scene, property='scene_name_2', text='Other scene name')
 
         layout.separator()
         row = layout.row()
-        row.scale_y = 1.3
-        row.operator(operator='wireframe_op.create_wireframe', text='Set up', icon='WIRE')
+        row.scale_y = 1.5
+        row.operator(operator='wireframe_op.set_up', text='Set up', icon='WIRE')
+
+        row = layout.row()
+        row.scale_y = 1.2
+        row.operator(operator='wireframe_op.add_to_current', text='Add to current', icon='PLUS')
+
+        row = layout.row()
+        row.scale_y = 1.2
+        row.operator(operator='wireframe_op.quick_remove', text='Quick remove', icon='X')

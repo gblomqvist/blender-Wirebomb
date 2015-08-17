@@ -10,15 +10,16 @@ class BlenderScene:
         name: The name of the scene.
     """
 
-    def __init__(self, scene, new_scene, new_name=None, renderer='CYCLES'):
+    def __init__(self, scene, new_scene, new_name=None, renderer=None):
         """Creates a full copy of scene if new_scene is set to True.
 
         Args:
             scene: A scene object which represents the scene to start from.
             new_scene: A boolean that if True, a full copy of scene will be created.
-            new_name: An optional string representing the name for the (new) scene. Must be given if new_scene is set
+            new_name: An optional string representing the (new) scene's name. Must be set if new_scene is set
                 to True.
-            renderer: A string representing the (new) scene's render engine, e.g. 'CYCLES'.
+            renderer: An optional string representing the (new) scene's render engine, e.g. 'CYCLES'. Must be set if
+                new_scene is set to True.
         """
         if new_scene:
             self.name = self.copy_scene(scene, new_name, renderer)
@@ -27,6 +28,9 @@ class BlenderScene:
             if new_name is not None:
                 scene.name = new_name
             self.name = scene.name
+
+            if renderer is not None:
+                scene.render.engine = renderer
 
         self.space_data = None
 
