@@ -51,13 +51,13 @@ class BlenderScene:
         bpy.ops.scene.new(type='FULL_COPY')
 
         # this is for better handling of duplicate scene names when creating a new scene
-        n = 0
+        n = 1
         while True:
             if new_name not in [scene.name for scene in bpy.data.scenes]:
                 bpy.context.screen.scene.name = new_name
                 break
             else:
-                new_name = original_new_name + '_' + str(n)
+                new_name = original_new_name + '_' + str(n).zfill(3)
                 n += 1
 
         bpy.data.scenes[new_name].render.engine = renderer
@@ -79,12 +79,12 @@ class BlenderScene:
         """Sets the active object to be one among the selected objects.
 
         Args:
-            obj_types: An optional sequence consisting of strings representing the object type(s)
+            obj_types: An optional array consisting of strings representing the object type(s)
                 that the active object is allowed to be. If none specified, all types count.
         """
         scene = self.set_as_active()
-        # TODO: Should I do like this and keep 'ALL'?
-        if obj_types == ['ALL']:
+
+        if 'ALL' in obj_types:
             obj_types = constants.obj_types
 
         for obj in scene.objects:
@@ -105,7 +105,7 @@ class BlenderScene:
         """
         scene = self.set_as_active()
 
-        if obj in [e for e in scene.objects]:
+        if obj.name in scene.objects:
             for n in layer_numbers:
                 if obj.layers[n]:
                     return True
@@ -116,7 +116,7 @@ class BlenderScene:
         """Checks the scene if any object is selected.
 
         Args:
-            obj_types: An optional sequence consisting of strings representing the object type(s)
+            obj_types: An optional array consisting of strings representing the object type(s)
                 that the object is allowed to be. If none specified, all types count.
 
         Returns:
@@ -124,13 +124,17 @@ class BlenderScene:
         """
         scene = self.set_as_active()
 
+        if 'ALL' in obj_types:
+            obj_types = constants.obj_types
+
         for obj in scene.objects:
             if obj.type in obj_types and obj.select is True:
                 return True
 
         return False
 
-    def select(self, mode, types=None, types_excluded=None, layers=None, layers_excluded=None, objects=None):
+    def select(self, mode, types=None, types_excluded=None, layers=None, layers_excluded=None,
+               objects=None, objects_excluded=None):
         """Selects or deselects objects.
 
         (De)selects specific objects or objects by object types and layers.
@@ -138,48 +142,56 @@ class BlenderScene:
         Args:
             mode: A string representing the mode, either 'SELECT' to select objects or 'DESELECT' to deselect objects.
             types: An optional set consisting of strings representing the object types that are to be (de)selected.
-                If none specified, objects variable needs to be set.
+                If none specified, all types count.
             types_excluded: An optional set consisting of strings representing the object types that are to be
                 deselected or left out if mode is set to 'DESELECT', these types will not be included among the
                 select_types.
             layers: An optional set consisting of integers representing the layers whose objects
-                are up for (de)selection.
+                are up for (de)selection. If none specified, all layers count.
             layers_excluded: An optional set consisting of integers representing the layers whose objects
                 will be deselected or left out if mode is set to 'DESELECT', these layers will not be included among
-                the layer_numbers.
-            objects: An optional sequence consisting of specific objects that are to be (de)selected, need to be set if
-                types variable is not set. If set, types variable will not matter.
+                the layers in the layers variable.
+            objects: An optional set consisting of objects that are to be (de)selected, need to be set if types
+                variable is not set. If set, types and layers variables will act as filters on those objects.
+            objects_excluded: An optional set consisting of objects that are to be deselected or left out if mode is set
+                to 'DESELECT', these objects will not be included among the objects in the objects variable.
         """
         scene = self.set_as_active()
         layer_numbers = set(constants.layer_numbers)
         obj_types = set(constants.obj_types)
 
         # setting up types and types excluded
-        if types is None:
-            types = set()
-        elif types == {'ALL'}:
+        if types is None or 'ALL' in types:
             types = obj_types
 
         if types_excluded is None:
             types_excluded = set()
-        elif types_excluded == {'ELSE'}:
+
+        elif 'ELSE' in types_excluded:
             types_excluded = obj_types - types
 
-        types = types - types_excluded
+        types -= types_excluded
 
         # setting up layers and layers excluded
-        if layers is None or layers == {'ALL'}:
+        if layers is None or 'ALL' in layers:
             layers = layer_numbers
 
         if layers_excluded is None:
             layers_excluded = set()
-        elif layers_excluded == {'ELSE'}:
+
+        elif 'ELSE' in layers_excluded:
             layers_excluded = layer_numbers - layers
 
-        layers = layers - layers_excluded
+        layers -= layers_excluded
 
+        # setting up objects and objects excluded
         if objects is None:
             objects = set()
+
+        if objects_excluded is None:
+            objects_excluded = set()
+
+        objects -= objects_excluded
 
         previous_area = bpy.context.area.type
 
@@ -189,20 +201,29 @@ class BlenderScene:
         if mode == 'SELECT':
             if len(objects) > 0:
                 for obj in scene.objects:
-                    if obj in objects:
+                    if ((obj in objects or 'ALL' in objects)
+                            and obj.type in types and self.object_on_layer(obj, layers)):
                         obj.select = True
+
+                    elif (obj in objects_excluded or 'ELSE' in objects_excluded
+                            or obj.type in types_excluded or self.object_on_layer(obj, layers_excluded)):
+                        obj.select = False
+
             else:
                 for obj in scene.objects:
                     if obj.type in types and self.object_on_layer(obj, layers):
                         obj.select = True
+
                     elif obj.type in types_excluded or self.object_on_layer(obj, layers_excluded):
                         obj.select = False
 
         elif mode == 'DESELECT':
             if len(objects) > 0:
                 for obj in scene.objects:
-                    if obj in objects:
+                    if ((obj in objects or 'ALL' in objects)
+                            and obj.type in types and self.object_on_layer(obj, layers)):
                         obj.select = False
+
             else:
                 for obj in scene.objects:
                     if obj.type in types and self.object_on_layer(obj, layers):
@@ -235,44 +256,72 @@ class BlenderScene:
             to_layer: An integer representing the layer to which the objects will be copied.
         """
         scene = self.set_as_active()
-        previous_layers = list(scene.layers)
         previous_area = bpy.context.area.type
-
         bpy.context.area.type = 'VIEW_3D'
+        previous_layers = list(scene.layers)
+
+        # can't duplicate objects on inactive layers
+        scene.layers = (True,) * 20
+
         bpy.ops.object.duplicate()
         self.move_selected_to_layer(to_layer)
 
         bpy.context.area.type = previous_area
         scene.layers = previous_layers
 
-    def clear_all_materials(self):
-        """Removes all materials from all the meshes in the scene."""
+    def copy_selected_to_scene(self, to_scene):
+        """Copies the selected objects to the given scene (to_scene).
+
+        Args:
+            to_scene: A scene object representing the scene to which the objects will be copied.
+        """
         scene = self.set_as_active()
+
+        previous_area = bpy.context.area.type
+        bpy.context.area.type = 'VIEW_3D'
         previous_layers = list(scene.layers)
+
+        # can't duplicate objects on inactive layers
         scene.layers = (True,) * 20
 
-        self.select('SELECT', {'MESH'}, {'ELSE'})
+        bpy.ops.object.duplicate()
+        bpy.ops.object.make_links_scene(scene=to_scene)
+        bpy.ops.object.delete()
+
+        scene.layers = previous_layers
+        bpy.context.area.type = previous_area
+
+    def clear_materials_on_selected(self):
+        """Removes all materials from all the selected objects in the scene."""
+        scene = self.set_as_active()
+        previous_layers = list(scene.layers)
+
+        # can't copy materials to objects on inactive layers
+        scene.layers = (True,) * 20
         bpy.context.active_object.data.materials.clear()
         bpy.ops.object.material_slot_copy()
 
         scene.layers = previous_layers
 
-    def selected_objects_to_list(self, obj_types=constants.obj_types):
-        """Puts all the selected objects in a list.
+    def selected_objects_to_set(self, obj_types=constants.obj_types):
+        """Puts all the selected objects in a set.
 
         Args:
-            obj_types: An optional sequence consisting of strings representing the object type(s) it will affect
+            obj_types: An optional array consisting of strings representing the object type(s) it will affect
                 of the selected objects. If none specified, all types count.
 
         Returns:
-            A list with the selected objects.
+            A set containing the selected objects.
         """
         scene = self.set_as_active()
-        selected_objects = []
+        selected_objects = set()
+
+        if 'ALL' in obj_types:
+            obj_types = constants.obj_types
 
         for obj in scene.objects:
             if obj.select and obj.type in obj_types:
-                selected_objects.append(obj)
+                selected_objects.add(obj)
 
         return selected_objects
 

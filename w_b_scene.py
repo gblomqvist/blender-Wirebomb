@@ -29,7 +29,8 @@ class BlenderSceneW(BlenderScene):
             # saves created scene
             w_var.created_scenes.add(bpy.data.scenes[self.name])
 
-    def select(self, mode, types=None, types_excluded=None, layers=None, layers_excluded=None, objects=None):
+    def select(self, mode, types=None, types_excluded=None, layers=None, layers_excluded=None,
+               objects=None, objects_excluded=None):
         """Selects or deselects objects, a special version of BlenderScene's select function.
 
         (De)selects specific objects or objects by object types and layers.
@@ -37,52 +38,56 @@ class BlenderSceneW(BlenderScene):
         Args:
             mode: A string representing the mode, either 'SELECT' to select objects or 'DESELECT' to deselect objects.
             types: An optional set consisting of strings representing the object types that are to be (de)selected.
-                If none specified, objects variable needs to be set.
+                If none specified, all types count.
             types_excluded: An optional set consisting of strings representing the object types that are to be
                 deselected or left out if mode is set to 'DESELECT', these types will not be included among the
                 select_types.
             layers: An optional set consisting of integers representing the layers whose objects
-                are up for (de)selection.
+                are up for (de)selection. If none specified, all layers count.
             layers_excluded: An optional set consisting of integers representing the layers whose objects
                 will be deselected or left out if mode is set to 'DESELECT', these layers will not be included among
-                the layer_numbers.
-            objects: An optional sequence consisting of specific objects that are to be (de)selected, need to be set if
-                types variable is not set. If set, types variable will not matter.
+                the layers in the layers variable.
+            objects: An optional set consisting of objects that are to be (de)selected, need to be set if types
+                variable is not set. If set, types and layers variables will act as filters on those objects.
+            objects_excluded: An optional set consisting of objects that are to be deselected or left out if mode is set
+                to 'DESELECT', these objects will not be included among the objects in the objects variable.
         """
         scene = self.set_as_active()
         layer_numbers = set(constants.layer_numbers)
         obj_types = set(constants.obj_types)
 
         # setting up types and types excluded
-        if types is None:
-            types = set()
-        elif types == {'ALL'}:
+        if types is None or 'ALL' in types:
             types = obj_types
 
         if types_excluded is None:
             types_excluded = set()
-        elif types_excluded == {'ELSE'}:
+
+        elif 'ELSE' in types_excluded:
             types_excluded = obj_types - types
 
-        types = types - types_excluded
+        types -= types_excluded
 
         # setting up layers and layers excluded
-        if layers is None:
-            layers = w_var.layer_numbers_affected
-        elif layers == {'ALL'}:
+        if layers is None or 'ALL' in layers:
             layers = layer_numbers
 
         if layers_excluded is None:
             layers_excluded = set()
-        elif layers_excluded == {'ELSE'}:
+
+        elif 'ELSE' in layers_excluded:
             layers_excluded = layer_numbers - layers
 
-        layers = layers - layers_excluded
+        layers -= layers_excluded
 
-        if w_var.cb_only_selected:
-            objects = w_var.only_selected
-        elif objects is None:
-            objects = set()
+        # setting up objects and objects excluded
+        if objects is None:
+            objects = w_var.objects_affected
+
+        if objects_excluded is None:
+            objects_excluded = set()
+
+        objects -= objects_excluded
 
         previous_area = bpy.context.area.type
 
@@ -92,20 +97,29 @@ class BlenderSceneW(BlenderScene):
         if mode == 'SELECT':
             if len(objects) > 0:
                 for obj in scene.objects:
-                    if obj in objects:
+                    if ((obj in objects or 'ALL' in objects)
+                            and obj.type in types and self.object_on_layer(obj, layers)):
                         obj.select = True
+
+                    elif (obj in objects_excluded or 'ELSE' in objects_excluded
+                            or obj.type in types_excluded or self.object_on_layer(obj, layers_excluded)):
+                        obj.select = False
+
             else:
                 for obj in scene.objects:
                     if obj.type in types and self.object_on_layer(obj, layers):
                         obj.select = True
+
                     elif obj.type in types_excluded or self.object_on_layer(obj, layers_excluded):
                         obj.select = False
 
         elif mode == 'DESELECT':
             if len(objects) > 0:
                 for obj in scene.objects:
-                    if obj in objects:
+                    if ((obj in objects or 'ALL' in objects)
+                            and obj.type in types and self.object_on_layer(obj, layers)):
                         obj.select = False
+
             else:
                 for obj in scene.objects:
                     if obj.type in types and self.object_on_layer(obj, layers):
@@ -118,7 +132,7 @@ class BlenderSceneW(BlenderScene):
         self.set_active_object(types)
 
     def set_up_rlayer(self, rlname, visible_layers=None, include_layers=None, mask_layers=None, rlname_other=None):
-        """Sets up one or two render layers, a special version of BlenderScene's set_up_rlayer function.
+        """Sets up one or two new render layers, a special version of BlenderScene's set_up_rlayer function.
 
         Args:
             rlname: A string representing the name of the render layer you want to set up.
@@ -168,7 +182,7 @@ class BlenderSceneW(BlenderScene):
             w_var.rlname_2 = new_rlayer.name
 
         # there needs to be two render layers in the same scene for freestyle compositing
-        if w_var.cb_comp:
+        if w_var.cb_composited:
             other_rlayer = scene.render.layers.new(rlname_other)
             other_rlayer.layers[19] = True
             w_var.rlname_other = other_rlayer.name
@@ -176,7 +190,7 @@ class BlenderSceneW(BlenderScene):
         if w_var.cb_ao:
             scene.render.layers[rlname].use_pass_ambient_occlusion = True
 
-            if w_var.cb_comp:
+            if w_var.cb_composited:
                 scene.render.layers[rlname_other].use_pass_ambient_occlusion = True
 
         # because I can't deactivate a layer if it is the only active one
@@ -184,7 +198,7 @@ class BlenderSceneW(BlenderScene):
         new_rlayer.layers[19] = True
 
         for i in layer_numbers:
-            if w_var.cb_comp:
+            if w_var.cb_composited:
                 if w_var.layer_numbers_other is not None:
                     if i in w_var.layer_numbers_other:
                         scene.render.layers[rlname].layers_zmask[i] = True
@@ -233,21 +247,15 @@ class BlenderSceneW(BlenderScene):
         previous_area = bpy.context.area.type
         bpy.context.area.type = 'VIEW_3D'
         previous_layers = list(scene.layers)
+
+        # can't delete objects on inactive layers
         scene.layers = (True,)*20
-        self.select('DESELECT', {'ALL'}, layers={'ALL'})
+        self.select('DESELECT', objects={'ALL'})
 
-        if w_var.cb_only_selected:
-            for obj in scene.objects:
-                if (obj not in w_var.only_selected
-                        and self.object_on_layer(obj, w_var.layer_numbers_other) is False):
-                    obj.select = True
-                    bpy.ops.object.delete()
-
-        else:
-            for obj in scene.objects:
-                if self.object_on_layer(obj, w_var.layer_numbers_all_used) is False:
-                    obj.select = True
-                    bpy.ops.object.delete()
+        for obj in scene.objects:
+            if obj not in w_var.objects_all_used:
+                obj.select = True
+                bpy.ops.object.delete()
 
         scene.layers = previous_layers
         bpy.context.area.type = previous_area
@@ -265,44 +273,44 @@ class BlenderSceneW(BlenderScene):
         tree.nodes.clear()
 
         # creating the nodes
-        alphaover = tree.nodes.new('CompositorNodeAlphaOver')
-        alphaover.location = -100, -80
+        node_alphaover = tree.nodes.new('CompositorNodeAlphaOver')
+        node_alphaover.location = -100, -80
 
-        rlwire = tree.nodes.new('CompositorNodeRLayers')
-        rlwire.location = -400, -75
-        rlwire.scene = bpy.data.scenes[wire_scene_intance.name]
-        rlwire.layer = w_var.rlname
+        node_rlwire = tree.nodes.new('CompositorNodeRLayers')
+        node_rlwire.location = -400, -75
+        node_rlwire.scene = bpy.data.scenes[wire_scene_intance.name]
+        node_rlwire.layer = w_var.rlname
 
-        rlclay = tree.nodes.new('CompositorNodeRLayers')
-        rlclay.location = -400, 250
-        rlclay.scene = scene
-        rlclay.layer = w_var.rlname_2
+        node_rlclay = tree.nodes.new('CompositorNodeRLayers')
+        node_rlclay.location = -400, 250
+        node_rlclay.scene = scene
+        node_rlclay.layer = w_var.rlname_2
 
-        comp = tree.nodes.new('CompositorNodeComposite')
-        comp.location = 400, 65
+        node_comp = tree.nodes.new('CompositorNodeComposite')
+        node_comp.location = 400, 65
 
-        viewer = tree.nodes.new('CompositorNodeViewer')
-        viewer.location = 400, -125
+        node_viewer = tree.nodes.new('CompositorNodeViewer')
+        node_viewer.location = 400, -125
 
         # connecting the nodes
         links = tree.links
-        links.new(rlclay.outputs[0], alphaover.inputs[1])
-        links.new(rlwire.outputs[0], alphaover.inputs[2])
+        links.new(node_rlclay.outputs[0], node_alphaover.inputs[1])
+        links.new(node_rlwire.outputs[0], node_alphaover.inputs[2])
 
         if w_var.cb_ao:
-            colormix = tree.nodes.new('CompositorNodeMixRGB')
-            colormix.location = 100, 140
-            colormix.blend_type = 'MULTIPLY'
-            colormix.inputs[0].default_value = 0.73
+            node_colormix = tree.nodes.new('CompositorNodeMixRGB')
+            node_colormix.location = 100, 140
+            node_colormix.blend_type = 'MULTIPLY'
+            node_colormix.inputs[0].default_value = 0.73
 
-            links.new(alphaover.outputs[0], colormix.inputs[1])
-            links.new(rlclay.outputs[10], colormix.inputs[2])
-            links.new(colormix.outputs[0], comp.inputs[0])
-            links.new(colormix.outputs[0], viewer.inputs[0])
+            links.new(node_alphaover.outputs[0], node_colormix.inputs[1])
+            links.new(node_rlclay.outputs[10], node_colormix.inputs[2])
+            links.new(node_colormix.outputs[0], node_comp.inputs[0])
+            links.new(node_colormix.outputs[0], node_viewer.inputs[0])
 
         else:
-            links.new(alphaover.outputs[0], comp.inputs[0])
-            links.new(alphaover.outputs[0], viewer.inputs[0])
+            links.new(node_alphaover.outputs[0], node_comp.inputs[0])
+            links.new(node_alphaover.outputs[0], node_viewer.inputs[0])
 
         for node in tree.nodes:
             node.select = False
@@ -432,41 +440,46 @@ class BlenderSceneW(BlenderScene):
             tree.nodes.clear()
 
             # creating the nodes
-            diffuse_node = tree.nodes.new('ShaderNodeBsdfDiffuse')
-            diffuse_node.location = -150, 50
-            diffuse_node.inputs['Color'].default_value = clay_color
-            diffuse_node.inputs['Roughness'].default_value = 0.05
-            diffuse_node.color = clay_color_rgb
+            node_diffuse = tree.nodes.new('ShaderNodeBsdfDiffuse')
+            node_diffuse.location = -150, 50
+            node_diffuse.inputs['Color'].default_value = clay_color
+            node_diffuse.inputs['Roughness'].default_value = 0.05
+            node_diffuse.color = clay_color_rgb
 
-            output_node = tree.nodes.new('ShaderNodeOutputMaterial')
-            output_node.location = 150, 50
+            # setting unique ID for use in real-time change
+            node_diffuse.name = 'clay_diffuse'
+            w_var.node_clay_diffuse = node_diffuse.name
+
+            node_output = tree.nodes.new('ShaderNodeOutputMaterial')
+            node_output.location = 150, 50
 
             # sets the viewport color
             clay_mat.diffuse_color = clay_color_rgb
 
             # connecting the nodes.
-            tree.links.new(diffuse_node.outputs[0], output_node.inputs[0])
+            tree.links.new(node_diffuse.outputs[0], node_output.inputs[0])
 
             for node in tree.nodes:
                 node.select = False
 
-        # 1 if all meshes is selected, 0 if not
-        mesh_select = 1
+        # 1 if all meshes is selected (then all meshes is affected and I can use material override in scene), 0 if not
+        all_meshes_selected = 1
 
         for obj in scene.objects:
-            if obj.type == 'MESH':
-                if not obj.select:
-                    mesh_select = 0
-                    break
+            if obj.type == 'MESH'and not obj.select:
+                all_meshes_selected = 0
+                break
 
-        # not when wireframe_type == 'WIREFRAME_MODIFIER' because wireframe and clay would get same material
-        if mesh_select == 1 and w_var.wireframe_type != 'WIREFRAME_MODIFIER':
+        # not when wireframe_method == 'WIREFRAME_MODIFIER' because wireframe and clay would get same material
+        if all_meshes_selected == 1 and w_var.wireframe_method != 'WIREFRAME_MODIFIER':
             scene.render.layers.active.material_override = clay_mat
 
         else:
             previous_area = bpy.context.area.type
             bpy.context.area.type = 'VIEW_3D'
             previous_layers = list(scene.layers)
+
+            # can't enter edit mode on objects on inactive layers
             scene.layers = (True,)*20
 
             for obj in scene.objects:
@@ -515,9 +528,9 @@ class BlenderSceneW(BlenderScene):
             wireframe_mat.use_transparency = True
             wireframe_mat.alpha = wire_color_alpha
             wireframe_mat.use_shadeless = True
-            wireframe_mat.offset_z = 0.03  # TODO: Tweak this value a last time.
+            wireframe_mat.offset_z = 0.028
 
-        self.select('SELECT', {'MESH'}, {'ELSE'}, {0}, {'ELSE'})
+        self.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
         bpy.context.active_object.data.materials.append(wireframe_mat)
         previous_area = bpy.context.area.type
 
@@ -559,6 +572,10 @@ class BlenderSceneW(BlenderScene):
             node_diffuse.inputs['Roughness'].default_value = 0.05
             node_diffuse.color = wireframe_color_rgb
 
+            # setting unique ID for use in real-time change
+            node_diffuse.name = 'wireframe_diffuse'
+            w_var.node_wireframe_diffuse = node_diffuse.name
+
             node_output = tree.nodes.new('ShaderNodeOutputMaterial')
             node_output.location = 150, 50
 
@@ -573,7 +590,7 @@ class BlenderSceneW(BlenderScene):
 
         # if object has no materials, fillout_mat is used so that the wireframe and clay materials are different
         fillout_mat = bpy.data.materials.new('fillout')
-        self.select('SELECT', {'MESH'}, {'ELSE'}, layers_excluded={'ELSE'})
+        self.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
 
         for obj in scene.objects:
             if obj.select:
@@ -581,11 +598,15 @@ class BlenderSceneW(BlenderScene):
                     obj.data.materials.append(fillout_mat)
 
                 obj.data.materials.append(wireframe_mat)
-                wireframe_modifier = obj.modifiers.new(name='Wireframe', type='WIREFRAME')
-                wireframe_modifier.use_even_offset = False
-                wireframe_modifier.use_replace = False
-                wireframe_modifier.material_offset = 1
-                wireframe_modifier.thickness = w_var.slider_wt_modifier
+                modifier_wireframe = obj.modifiers.new(name='Wireframe', type='WIREFRAME')
+                modifier_wireframe.use_even_offset = False
+                modifier_wireframe.use_replace = False
+                modifier_wireframe.material_offset = 1
+                modifier_wireframe.thickness = w_var.slider_wt_modifier
+
+                # setting unique ID for use in real-time change
+                modifier_wireframe.name = 'wires'
+                w_var.modifier_wireframe = modifier_wireframe.name
 
         return wireframe_mat
 
@@ -598,7 +619,7 @@ class BlenderSceneW(BlenderScene):
         scene = self.set_as_active()
         previous_area = bpy.context.area.type
         bpy.context.area.type = 'VIEW_3D'
-        self.select('SELECT', {'MESH'}, {'ELSE'}, layers_excluded={'ELSE'})
+        self.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
 
         for obj in scene.objects:
             if obj.select:
@@ -608,6 +629,8 @@ class BlenderSceneW(BlenderScene):
                 bpy.ops.mesh.mark_freestyle_edge()
                 bpy.ops.mesh.select_all(action='DESELECT')
                 bpy.ops.object.mode_set(mode='OBJECT')
+
+        bpy.context.area.type = previous_area
 
         scene.render.use_freestyle = True
         scene.render.layers.active = scene.render.layers[w_var.rlname]
@@ -631,7 +654,6 @@ class BlenderSceneW(BlenderScene):
         linestyle.thickness = wire_thickness
 
         scene.render.layers.active.freestyle_settings.linesets.active.linestyle = linestyle
-        bpy.context.area.type = previous_area
 
         return linestyle
 
@@ -649,3 +671,28 @@ class BlenderSceneW(BlenderScene):
             node.select = False
 
         scene.world = new_world
+
+    def add_objects_used(self):
+        """Adds all used objects to three sets in w_var variables: affected objects, other objects and all used objects.
+        """
+        scene = self.set_as_active()
+
+        if w_var.cb_only_selected:
+            for obj in scene.objects:
+                if obj.select:
+                    w_var.objects_affected.add(obj)
+                    w_var.objects_all_used.add(obj)
+
+                elif self.object_on_layer(obj, w_var.layer_numbers_other):
+                    w_var.objects_other.add(obj)
+                    w_var.objects_all_used.add(obj)
+
+        else:
+            for obj in scene.objects:
+                if self.object_on_layer(obj, w_var.layer_numbers_affected):
+                    w_var.objects_affected.add(obj)
+                    w_var.objects_all_used.add(obj)
+
+                elif self.object_on_layer(obj, w_var.layer_numbers_other):
+                    w_var.objects_other.add(obj)
+                    w_var.objects_all_used.add(obj)
