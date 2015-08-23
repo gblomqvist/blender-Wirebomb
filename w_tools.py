@@ -134,14 +134,14 @@ def error_check(context):
         w_var.error_202 = True
 
     if len(w_var.scene_name_1) == 0:
-        error_msg += '- No wire scene name!\n'
+        error_msg += '- No wire/clay scene name!\n'
         success = False
 
         # used for row alert in __init__.py
         w_var.error_301 = True
 
     if w_var.wireframe_method == 'WIREFRAME_BI' and len(w_var.scene_name_2) == 0:
-        error_msg += '- No clay scene name!\n'
+        error_msg += '- No clay/other scene name!\n'
         success = False
         # used for row alert in __init__.py
         w_var.error_302 = True

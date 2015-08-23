@@ -386,7 +386,7 @@ class WireframePanel(bpy.types.Panel):
                 context.scene.cb_clay_only and context.scene.cb_clay):
             row = layout.row()
 
-            if w_var.error_301 and len(context.scene.field_scene_name) == 0:
+            if w_var.error_301 and len(context.scene.scene_name_1) == 0:
                 row.alert = True
             else:
                 w_var.error_301 = False
@@ -399,7 +399,7 @@ class WireframePanel(bpy.types.Panel):
         if context.scene.wireframe_method == 'WIREFRAME_BI':
             row = layout.row()
 
-            if w_var.error_302 and len(context.scene.field_scene_name2) == 0:
+            if w_var.error_302 and len(context.scene.scene_name_2) == 0:
                 row.alert = True
             else:
                 w_var.error_302 = False
