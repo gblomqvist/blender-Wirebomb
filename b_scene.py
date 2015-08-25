@@ -1,4 +1,5 @@
-# noinspection PyUnresolvedReferences
+# <pep8-80 compliant>
+
 import bpy
 from . import constants
 
@@ -198,7 +199,11 @@ class BlenderScene:
         # can't be in 'PROPERTY' space when changing object select property
         bpy.context.area.type = 'VIEW_3D'
 
-        if mode == 'SELECT':
+        # much quicker than looping through objects
+        if 'ALL' in objects and types == obj_types and layers == layer_numbers:
+            bpy.ops.object.select_all(action=mode)
+
+        elif mode == 'SELECT':
             if len(objects) > 0:
                 for obj in scene.objects:
                     if ((obj in objects or 'ALL' in objects)
@@ -294,13 +299,20 @@ class BlenderScene:
     def clear_materials_on_selected(self):
         """Removes all materials from all the selected objects in the scene."""
         scene = self.set_as_active()
+        previous_area = bpy.context.area.type
         previous_layers = list(scene.layers)
+
+        bpy.context.active_object.data.materials.clear()
+
+        # can't use operators while in the 'PROPERTIES' area
+        bpy.context.area.type = 'VIEW_3D'
 
         # can't copy materials to objects on inactive layers
         scene.layers = (True,) * 20
-        bpy.context.active_object.data.materials.clear()
+
         bpy.ops.object.material_slot_copy()
 
+        bpy.context.area.type = previous_area
         scene.layers = previous_layers
 
     def selected_objects_to_set(self, obj_types=constants.obj_types):

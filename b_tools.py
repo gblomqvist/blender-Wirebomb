@@ -1,5 +1,4 @@
-# noinspection PyUnresolvedReferences
-import bpy
+# <pep8-80 compliant>
 
 
 def layerlist_to_numberset(layer_list):

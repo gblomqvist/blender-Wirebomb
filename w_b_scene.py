@@ -1,7 +1,7 @@
-# noinspection PyUnresolvedReferences
+# <pep8-80 compliant>
+
 import bpy
 from .b_scene import BlenderScene
-from . import b_tools
 from . import w_var
 from . import constants
 
@@ -94,7 +94,11 @@ class BlenderSceneW(BlenderScene):
         # can't be in 'PROPERTY' space when changing object select property
         bpy.context.area.type = 'VIEW_3D'
 
-        if mode == 'SELECT':
+        # much quicker than looping through objects
+        if 'ALL' in objects and types == obj_types and layers == layer_numbers:
+            bpy.ops.object.select_all(action=mode)
+
+        elif mode == 'SELECT':
             if len(objects) > 0:
                 for obj in scene.objects:
                     if ((obj in objects or 'ALL' in objects)
@@ -447,7 +451,7 @@ class BlenderSceneW(BlenderScene):
             node_diffuse.color = clay_color_rgb
 
             # setting unique ID for use in real-time change
-            node_diffuse.name = 'clay_diffuse'
+            node_diffuse.name = 'clay@addon'
             w_var.node_clay_diffuse = node_diffuse.name
 
             node_output = tree.nodes.new('ShaderNodeOutputMaterial')
@@ -484,11 +488,12 @@ class BlenderSceneW(BlenderScene):
 
             for obj in scene.objects:
                 if obj.select:
-
+                    print(obj.name)
                     # only enters edit mode on active object
                     scene.objects.active = obj
                     obj.data.materials.append(clay_mat)
                     clay_index = obj.data.materials.find(clay_mat.name)
+                    print(clay_index)
                     obj.active_material_index = clay_index
 
                     bpy.ops.object.mode_set(mode='EDIT')
@@ -573,7 +578,7 @@ class BlenderSceneW(BlenderScene):
             node_diffuse.color = wireframe_color_rgb
 
             # setting unique ID for use in real-time change
-            node_diffuse.name = 'wireframe_diffuse'
+            node_diffuse.name = 'wireframe@addon'
             w_var.node_wireframe_diffuse = node_diffuse.name
 
             node_output = tree.nodes.new('ShaderNodeOutputMaterial')

@@ -1,9 +1,10 @@
-# noinspection PyUnresolvedReferences
+# <pep8-80 compliant>
+
 import bpy
+import configparser
+from .w_b_scene import BlenderSceneW
 from . import b_tools
 from . import w_var
-from .w_b_scene import BlenderSceneW
-import configparser
 
 
 def set_layers_affected():
@@ -268,10 +269,16 @@ def set_up_wireframe_bi():
         original_pivotpoint = wire_scene.view3d_pivotpoint('get')
         wire_scene.view3d_pivotpoint('set', 'BOUNDING_BOX_CENTER')
 
+        # updates progress bar to 14 %
+        bpy.context.window_manager.progress_update(14)
+
         # deletes unnecessary objects and removes all materials from the affected meshes
         wire_scene.clean_objects()
         wire_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
         wire_scene.clear_materials_on_selected()
+
+        # updates progress bar to 26 %
+        bpy.context.window_manager.progress_update(26)
 
         # sets up renderlayer
         wire_scene.set_up_rlayer('wireframe', [0, 1], [0], [1])
@@ -281,9 +288,15 @@ def set_up_wireframe_bi():
         wire_scene.move_selected_to_layer(0)
         wire_scene.copy_selected_to_layer(1)
 
+        # updates progress bar to 33 %
+        bpy.context.window_manager.progress_update(33)
+
         # selects and moves all 'other' objects to layer 1
         wire_scene.select('SELECT', objects=w_var.objects_other, objects_excluded={'ELSE'})
         wire_scene.move_selected_to_layer(1)
+
+        # updates progress bar to 37 %
+        bpy.context.window_manager.progress_update(38)
 
         # sets up wireframe material on affected meshes
         w_var.wire_bi_mat = wire_scene.add_wireframe_bi()
@@ -294,6 +307,9 @@ def set_up_wireframe_bi():
         # changes back to original 3D view pivot point and deselects all objects as a last thing to clean up
         wire_scene.view3d_pivotpoint('set', original_pivotpoint)
         wire_scene.select('DESELECT', objects={'ALL'})
+
+        # updates progress bar to 55 %
+        bpy.context.window_manager.progress_update(55)
 
         # creates clay/other scene
         clay_scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_2, 'CYCLES')
@@ -307,11 +323,20 @@ def set_up_wireframe_bi():
     else:
         # creates clay scene
         clay_scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_2, 'CYCLES')
+
+        # updates progress bar to 30 % and sets up render layer
+        bpy.context.window_manager.progress_update(30)
         clay_scene.set_up_rlayer('clay')
+
+    # updates progress bar to 60 %
+    bpy.context.window_manager.progress_update(60)
 
     # sets all used objects to three sets: affected objects, other object and all used objects
     # (need to do after I copy the scene to get the objects from the copied scene)
     clay_scene.add_objects_used()
+
+    # updates progress bar to 72 %
+    bpy.context.window_manager.progress_update(72)
 
     if w_var.cb_clear_materials:
 
@@ -319,11 +344,17 @@ def set_up_wireframe_bi():
         clay_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
         clay_scene.clear_materials_on_selected()
 
+    # updates progress bar to 85 %
+    bpy.context.window_manager.progress_update(85)
+
     if w_var.cb_clay:
 
         # adds clay material to affected meshes
         clay_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
         w_var.clay_mat = clay_scene.add_clay_to_selected()
+
+    # updates progress bar to 99 %
+    bpy.context.window_manager.progress_update(99)
 
     if w_var.cb_ao:
 
@@ -344,6 +375,9 @@ def set_up_wireframe_freestyle():
     # (need to do after I copy the scene to get the objects from the copied scene)
     wire_scene.add_objects_used()
 
+    # updates progress bar to 25 %
+    bpy.context.window_manager.progress_update(25)
+
     if not w_var.cb_clay_only:
 
         # sets up renderlayer(s) (depending on 'Composited wireframing' checkbox) and freestyle wireframing
@@ -354,17 +388,26 @@ def set_up_wireframe_freestyle():
         # sets up renderlayer named 'clay' instead of 'wireframe'
         wire_scene.set_up_rlayer('clay')
 
+    # updates progress bar to 50 %
+    bpy.context.window_manager.progress_update(50)
+
     if w_var.cb_clear_materials:
 
         # removes all materials from affected meshes
         wire_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
         wire_scene.clear_materials_on_selected()
 
+    # updates progress bar to 75 %
+    bpy.context.window_manager.progress_update(75)
+
     if w_var.cb_clay:
 
         # adds clay material to affected meshes
         wire_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
         w_var.clay_mat = wire_scene.add_clay_to_selected()
+
+    # updates progress bar to 99 %
+    bpy.context.window_manager.progress_update(99)
 
     if w_var.cb_ao and not w_var.cb_composited:
 
@@ -399,11 +442,17 @@ def set_up_wireframe_modifier():
     # (need to do after I copy the scene to get the objects from the copied scene)
     wire_scene.add_objects_used()
 
+    # updates progress bar to 25 %
+    bpy.context.window_manager.progress_update(25)
+
     if w_var.cb_clear_materials:
 
         # removes all materials from affected meshes
         wire_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
         wire_scene.clear_materials_on_selected()
+
+    # updates progress bar to 50 %
+    bpy.context.window_manager.progress_update(50)
 
     if w_var.cb_clay:
 
@@ -411,6 +460,9 @@ def set_up_wireframe_modifier():
         # (need to add clay material before wireframe material for material offset in wireframe modifier to be correct)
         wire_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
         w_var.clay_mat = wire_scene.add_clay_to_selected()
+
+    # updates progress bar to 75 %
+    bpy.context.window_manager.progress_update(75)
 
     if not w_var.cb_clay_only:
 
@@ -422,6 +474,9 @@ def set_up_wireframe_modifier():
 
         # sets up renderlayer named 'clay' instead of 'wireframe'
         wire_scene.set_up_rlayer('clay')
+
+    # updates progress bar to 99 %
+    bpy.context.window_manager.progress_update(99)
 
     if w_var.cb_ao:
 

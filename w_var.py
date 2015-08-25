@@ -1,3 +1,5 @@
+# <pep8-80 compliant>
+
 # all scenes created via this add-on during this blender session (for 'Quick remove' operator)
 created_scenes = set()
 

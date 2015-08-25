@@ -1,4 +1,5 @@
-# noinspection PyUnresolvedReferences
+# <pep8-80 compliant>
+
 import bpy
 from . import w_tools
 from . import w_var
@@ -16,6 +17,10 @@ class WireframeOperator(bpy.types.Operator):
     def execute(self, context):
         if self.success:
 
+            # initiates progress bar and updates it to 1 %
+            context.window_manager.progress_begin(0, 100)
+            context.window_manager.progress_update(1)
+
             # runs wireframing
             if w_var.wireframe_method == 'WIREFRAME_BI':
                 w_tools.set_up_wireframe_bi()
@@ -28,6 +33,9 @@ class WireframeOperator(bpy.types.Operator):
 
             w_tools.update_material_lists()
 
+            # terminates the progress bar
+            context.window_manager.progress_end()
+
             self.report({'INFO'}, 'There you go!')
 
         elif not self.success:
@@ -36,6 +44,7 @@ class WireframeOperator(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
+
         # saves information from user's interface
         w_tools.set_variables(context)
 
