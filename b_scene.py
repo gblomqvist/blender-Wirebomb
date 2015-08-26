@@ -15,13 +15,15 @@ class BlenderScene:
         """Creates a full copy of scene if new_scene is set to True.
 
         Args:
-            scene: A scene object which represents the scene to start from.
+            scene: A scene object which represents the scene to copy/work on. Later referred to as the 'original scene'.
             new_scene: A boolean that if True, a full copy of scene will be created.
             new_name: An optional string representing the (new) scene's name. Must be set if new_scene is set
                 to True.
             renderer: An optional string representing the (new) scene's render engine, e.g. 'CYCLES'. Must be set if
                 new_scene is set to True.
         """
+        self.original_scene = scene
+
         if new_scene:
             self.name = self.copy_scene(scene, new_name, renderer)
 
@@ -33,7 +35,8 @@ class BlenderScene:
             if renderer is not None:
                 scene.render.engine = renderer
 
-        self.space_data = None
+    def __str__(self):
+        return '<BlenderScene: {0}, original_scene: {1}>'.format(self.name, self.original_scene.name)
 
     @staticmethod
     def copy_scene(scene, new_name, renderer='CYCLES'):
@@ -64,6 +67,10 @@ class BlenderScene:
         bpy.data.scenes[new_name].render.engine = renderer
 
         return new_name
+
+    def get_original_scene(self):
+        """Returns the original blender scene of this instance."""
+        return self.original_scene
 
     def set_as_active(self):
         """Sets the scene as active.
