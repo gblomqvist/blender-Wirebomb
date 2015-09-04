@@ -1,5 +1,17 @@
 # <pep8-80 compliant>
 
+error_101 = False  # no mesh selected
+error_201 = False  # no clay material selected
+error_202 = False  # no clay material selected
+error_301 = False  # no wire scene name
+error_302 = False  # no clay scene name
+
+# if checkboxes are active
+cb_composited_active = None
+cb_clay_only_active = None
+cb_mat_wire_active = None
+cb_mat_clay_active = None
+
 # all scenes created via this add-on during this blender session (for 'Quick remove' operator)
 created_scenes = set()
 
@@ -10,12 +22,6 @@ original_scene = None
 node_wireframe_diffuse = ''
 node_clay_diffuse = ''
 modifier_wireframe = ''
-
-error_101 = False  # no mesh selected
-error_201 = False  # no clay material selected
-error_202 = False  # no clay material selected
-error_301 = False  # no wire scene name
-error_302 = False  # no clay scene name
 
 # render layer names
 rlname = ''
@@ -32,12 +38,6 @@ wire_freestyle_linestyle = None
 wire_modifier_mat = None
 wire_bi_mat = None
 clay_mat = None
-
-# if checkboxes are active
-cb_composited_active = None
-cb_clay_only_active = None
-cb_mat_wire_active = None
-cb_mat_clay_active = None
 
 # from interface:
 # wireframe type

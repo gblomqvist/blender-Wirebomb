@@ -22,6 +22,7 @@ class BlenderSceneW(BlenderScene):
             renderer: An optional string representing the (new) scene's render engine, e.g. 'CYCLES'. Must be set if
                 new_scene is set to True.
         """
+        print(super(BlenderSceneW))
         super(BlenderSceneW, self).__init__(scene, backup_scene, new_name, renderer)
 
         if backup_scene:
@@ -91,7 +92,7 @@ class BlenderSceneW(BlenderScene):
 
         previous_area = bpy.context.area.type
 
-        # can't be in 'PROPERTY' space when changing object select property
+        # can't change object select property while in the 'PROPERTIES' area
         bpy.context.area.type = 'VIEW_3D'
 
         # much quicker than looping through objects
@@ -99,7 +100,7 @@ class BlenderSceneW(BlenderScene):
             bpy.ops.object.select_all(action=mode)
 
         elif mode == 'SELECT':
-            if len(objects) > 0:
+            if objects is not None:
                 for obj in scene.objects:
                     if ((obj in objects or 'ALL' in objects)
                             and obj.type in types and self.object_on_layer(obj, layers)):
@@ -118,7 +119,7 @@ class BlenderSceneW(BlenderScene):
                         obj.select = False
 
         elif mode == 'DESELECT':
-            if len(objects) > 0:
+            if objects is not None:
                 for obj in scene.objects:
                     if ((obj in objects or 'ALL' in objects)
                             and obj.type in types and self.object_on_layer(obj, layers)):
@@ -135,7 +136,8 @@ class BlenderSceneW(BlenderScene):
         bpy.context.area.type = previous_area
         self.set_active_object(types)
 
-    def set_up_rlayer(self, rlname, visible_layers=None, include_layers=None, mask_layers=None, rlname_other=None):
+    def set_up_rlayer(self, rlname, visible_layers=None, include_layers=None,
+                      exclude_layers=None, mask_layers=None, rlname_other=None):
         """Sets up one or two new render layers, a special version of BlenderScene's set_up_rlayer function.
 
         Args:
@@ -144,6 +146,8 @@ class BlenderSceneW(BlenderScene):
                 -i.e. all layers you want to render, which also will be visible in the viewport-in the new render layer.
             include_layers: An optional list consisting of integers representing the layers
                 you want to be included in the new render layer (specific for this render layer).
+            exclude_layers: An optional list consisting of integers representing the layers
+                you want to be excluded in the new render layer (specific for this render layer).
             mask_layers: An optional list consisting of integers representing the layers
                 you want to be masked in the new render layer (specific for this render layer).
             rlname_other: An optional string representing the name of the second render layer, which is needed if the
@@ -157,6 +161,9 @@ class BlenderSceneW(BlenderScene):
 
         if include_layers is None:
             include_layers = w_var.layer_numbers_all_used
+
+        if exclude_layers is None:
+            exclude_layers = []
 
         if mask_layers is None:
             mask_layers = []
@@ -203,44 +210,46 @@ class BlenderSceneW(BlenderScene):
 
         for i in layer_numbers:
             if w_var.cb_composited:
-                if w_var.layer_numbers_other is not None:
-                    if i in w_var.layer_numbers_other:
-                        scene.render.layers[rlname].layers_zmask[i] = True
-                        scene.render.layers[rlname_other].layers[i] = True
-
-                    else:
-                        scene.render.layers[rlname].layers_zmask[i] = False
-                        scene.render.layers[rlname_other].layers[i] = False
-
-                if w_var.layer_numbers_affected is not None:
-                    if i in w_var.layer_numbers_affected:
-                        scene.render.layers[rlname_other].layers_zmask[i] = True
-                        scene.render.layers[rlname].layers[i] = True
-
-                    else:
-                        scene.render.layers[rlname_other].layers_zmask[i] = False
-                        scene.render.layers[rlname].layers[i] = False
-            else:
-                if include_layers is not None:
-                    if i in include_layers:
-                        scene.render.layers[rlname].layers[i] = True
-
-                    else:
-                        scene.render.layers[rlname].layers[i] = False
-
-                if mask_layers is not None:
-                    if i in mask_layers:
-                        scene.render.layers[rlname].layers_zmask[i] = True
-
-                    else:
-                        scene.render.layers[rlname].layers_zmask[i] = False
-
-            if visible_layers is not None:
-                if i in visible_layers:
-                    scene.layers[i] = True
+                if i in w_var.layer_numbers_affected:
+                    scene.render.layers[rlname].layers[i] = True
+                    scene.render.layers[rlname_other].layers_zmask[i] = True
 
                 else:
-                    scene.layers[i] = False
+                    scene.render.layers[rlname].layers[i] = False
+                    scene.render.layers[rlname_other].layers_zmask[i] = False
+
+                if i in w_var.layer_numbers_other:
+                    scene.render.layers[rlname_other].layers[i] = True
+                    scene.render.layers[rlname].layers_zmask[i] = True
+
+                else:
+                    scene.render.layers[rlname_other].layers[i] = False
+                    scene.render.layers[rlname].layers_zmask[i] = False
+
+            else:
+                if i in include_layers:
+                    scene.render.layers[rlname].layers[i] = True
+
+                else:
+                    scene.render.layers[rlname].layers[i] = False
+
+                if i in mask_layers:
+                    scene.render.layers[rlname].layers_zmask[i] = True
+
+                else:
+                    scene.render.layers[rlname].layers_zmask[i] = False
+
+            if i in visible_layers:
+                scene.layers[i] = True
+
+            else:
+                scene.layers[i] = False
+
+            if i in exclude_layers:
+                scene.render.layers[rlname].layers_exclude[i] = True
+
+            else:
+                scene.render.layers[rlname].layers_exclude[i] = False
 
     def clean_objects(self):
         """Deletes all objects in blender internal that is not going to get wireframed.
@@ -466,44 +475,29 @@ class BlenderSceneW(BlenderScene):
             for node in tree.nodes:
                 node.select = False
 
-        # 1 if all meshes is selected (then all meshes is affected and I can use material override in scene), 0 if not
-        all_meshes_selected = 1
+        previous_area = bpy.context.area.type
+        bpy.context.area.type = 'VIEW_3D'
+        previous_layers = list(scene.layers)
+
+        # can't enter edit mode on objects on inactive layers
+        scene.layers = (True,)*20
 
         for obj in scene.objects:
-            if obj.type == 'MESH'and not obj.select:
-                all_meshes_selected = 0
-                break
+            if obj.select:
+                # only enters edit mode on active object
+                scene.objects.active = obj
+                obj.data.materials.append(clay_mat)
+                clay_index = obj.data.materials.find(clay_mat.name)
+                obj.active_material_index = clay_index
 
-        # not when wireframe_method == 'WIREFRAME_MODIFIER' because wireframe and clay would get same material
-        if all_meshes_selected == 1 and w_var.wireframe_method != 'WIREFRAME_MODIFIER':
-            scene.render.layers.active.material_override = clay_mat
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.object.material_slot_assign()
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.object.mode_set(mode='OBJECT')
 
-        else:
-            previous_area = bpy.context.area.type
-            bpy.context.area.type = 'VIEW_3D'
-            previous_layers = list(scene.layers)
-
-            # can't enter edit mode on objects on inactive layers
-            scene.layers = (True,)*20
-
-            for obj in scene.objects:
-                if obj.select:
-                    print(obj.name)
-                    # only enters edit mode on active object
-                    scene.objects.active = obj
-                    obj.data.materials.append(clay_mat)
-                    clay_index = obj.data.materials.find(clay_mat.name)
-                    print(clay_index)
-                    obj.active_material_index = clay_index
-
-                    bpy.ops.object.mode_set(mode='EDIT')
-                    bpy.ops.mesh.select_all(action='SELECT')
-                    bpy.ops.object.material_slot_assign()
-                    bpy.ops.mesh.select_all(action='SELECT')
-                    bpy.ops.object.mode_set(mode='OBJECT')
-
-            scene.layers = previous_layers
-            bpy.context.area.type = previous_area
+        scene.layers = previous_layers
+        bpy.context.area.type = previous_area
 
         return clay_mat
 

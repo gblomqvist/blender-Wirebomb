@@ -1,6 +1,7 @@
 # <pep8-80 compliant>
 
 import bpy
+import time
 from . import w_tools
 from . import w_var
 
@@ -11,6 +12,7 @@ class WireframeOperator(bpy.types.Operator):
     bl_idname = 'scene.wireframe_and_clay_set_up_new'
 
     def __init__(self):
+        self.start = time.time()
         self.success = False
         self.error_msg = ""
 
@@ -36,7 +38,7 @@ class WireframeOperator(bpy.types.Operator):
             # terminates the progress bar
             context.window_manager.progress_end()
 
-            self.report({'INFO'}, 'There you go!')
+            self.report({'INFO'}, "Setup done in {} seconds!".format(round(time.time() - self.start, 2)))
 
         elif not self.success:
             self.report({'ERROR'}, self.error_msg)
@@ -45,7 +47,7 @@ class WireframeOperator(bpy.types.Operator):
 
     def invoke(self, context, event):
 
-        # saves information from user's interface
+        # saves information from UI and resets variables
         w_tools.set_variables(context)
 
         # checks for any errors
@@ -59,12 +61,18 @@ class QuickRemoveOperator(bpy.types.Operator):
     bl_label = "Quick remove"
     bl_idname = 'scene.wireframe_and_clay_quick_remove'
 
+    def __init__(self):
+        self.start = time.time()
+
     def execute(self, context):
+
+        # iterates over copy because original is being changed
         for scene in list(w_var.created_scenes):
-            if scene.name in bpy.data.scenes:
+            if scene.name in bpy.data.scenes:  # TODO: This line creates decoding error (very rare bug)
                 bpy.data.scenes.remove(scene)
                 w_var.created_scenes.remove(scene)
 
+        self.report({'INFO'}, "Remove done in {} seconds!".format(round(time.time() - self.start, 2)))
         return {'FINISHED'}
 
 
@@ -84,7 +92,6 @@ class ConfigSaveOperator(bpy.types.Operator):
         else:
             self.report({'ERROR'}, "File extension must be INI !")
 
-        self.report({'INFO'}, 'There you go!')
         return {'FINISHED'}
 
     def invoke(self, context, event):

@@ -1,5 +1,13 @@
 # <pep8-80 compliant>
 
+import bpy
+from .w_b_scene import BlenderSceneW
+from . import w_tools
+from . import b_tools
+from . import w_operators
+from . import w_var
+from . import constants
+
 bl_info = {
     "name": "Cycles Wireframe and Clay",
     "author": "Gustaf Blomqvist",
@@ -33,16 +41,6 @@ if 'bpy' in locals():
 
     if 'constants' in locals():
         importlib.reload(constants)
-
-
-# noinspection PyUnresolvedReferences
-import bpy
-from .w_b_scene import BlenderSceneW
-from . import w_tools
-from . import b_tools
-from . import w_operators
-from . import w_var
-from . import constants
 
 
 def register():
@@ -84,24 +82,20 @@ class MaterialLists(bpy.types.PropertyGroup):
 
 def update_color_wire(self, context):
     """Updates the wireframe material's color."""
+    if hasattr(w_var.wire_freestyle_linestyle, 'color'):
+        w_var.wire_freestyle_linestyle.color = context.scene.color_wire[0:3]
+        w_var.wire_freestyle_linestyle.alpha = context.scene.color_wire[-1]
 
-    if context.scene.wireframe_method == 'WIREFRAME_FREESTYLE':
-        if hasattr(w_var.wire_freestyle_linestyle, 'color'):
-            w_var.wire_freestyle_linestyle.color = context.scene.color_wire[0:3]
-            w_var.wire_freestyle_linestyle.alpha = context.scene.color_wire[-1]
+    if hasattr(w_var.wire_modifier_mat, 'node_tree'):
+        node = w_var.wire_modifier_mat.node_tree.nodes[w_var.node_wireframe_diffuse]
+        node.inputs[0].default_value = context.scene.color_wire
 
-    elif context.scene.wireframe_method == 'WIREFRAME_MODIFIER':
-        if hasattr(w_var.wire_modifier_mat, 'node_tree'):
-            node = w_var.wire_modifier_mat.node_tree.nodes[w_var.node_wireframe_diffuse]
-            node.inputs[0].default_value = context.scene.color_wire
+        # updating viewport color
+        w_var.wire_modifier_mat.diffuse_color = context.scene.color_wire[0:3]
 
-            # updating viewport color
-            w_var.wire_modifier_mat.diffuse_color = context.scene.color_wire[0:3]
-
-    elif context.scene.wireframe_method == 'WIREFRAME_BI':
-        if hasattr(w_var.wire_bi_mat, 'diffuse_color'):
-            w_var.wire_bi_mat.diffuse_color = context.scene.color_wire[0:3]
-            w_var.wire_bi_mat.alpha = context.scene.color_wire[-1]
+    if hasattr(w_var.wire_bi_mat, 'diffuse_color'):
+        w_var.wire_bi_mat.diffuse_color = context.scene.color_wire[0:3]
+        w_var.wire_bi_mat.alpha = context.scene.color_wire[-1]
 
 
 def update_color_clay(self, context):
@@ -116,7 +110,7 @@ def update_color_clay(self, context):
 
 def update_wire_thickness(self, context):
     """Updates the wireframe's thickness."""
-    if context.scene.wireframe_method == 'WIREFRAME_FREESTYLE':
+    if hasattr(w_var.wire_freestyle_linestyle, 'thickness'):
         w_var.wire_freestyle_linestyle.thickness = context.scene.slider_wt_freestyle
 
     elif context.scene.wireframe_method == 'WIREFRAME_MODIFIER':
@@ -158,20 +152,20 @@ bpy.types.Scene.color_wire = bpy.props.FloatVectorProperty(subtype='COLOR',
                                                            min=0,
                                                            max=1,
                                                            size=4,
-                                                           default=(0.051, 0.743, 0.000, 0.500),
+                                                           default=(0.206003, 0.743, 0, 1),
                                                            update=update_color_wire,
                                                            description="Wireframe color (changes real-time)")
 bpy.types.Scene.color_clay = bpy.props.FloatVectorProperty(subtype='COLOR',
                                                            min=0, max=1,
                                                            size=4,
-                                                           default=(0.030, 0.143, 0.000, 1.000),
+                                                           default=(0.114367, 0.0137, 0.0432822, 1),
                                                            update=update_color_clay,
                                                            description="Clay color (changes real-time)")
 
 # creates two layer tables
 bpy.types.Scene.layers_affected = bpy.props.BoolVectorProperty(subtype='LAYER',
                                                                size=20,
-                                                               default=(True,) + (False,) * 19,
+                                                               default=(False,) * 20,
                                                                description="Layers whose meshes will be affected")
 bpy.types.Scene.layers_other = bpy.props.BoolVectorProperty(subtype='LAYER',
                                                             size=20,
@@ -265,14 +259,14 @@ class WireframePanel(bpy.types.Panel):
             layers_affected = list(scene.get_original_scene().layers_affected)
             layers_other = list(scene.get_original_scene().layers_other)
 
-            if not scene.get_original_scene().cb_only_selected:
-                if not (any(layers_affected)
-                        and any(b_tools.manipulate_layerlists('subtract', layers_other, layers_affected))):
-                    row.active = False
-                    w_var.cb_composited_active = False
+            if (not scene.get_original_scene().cb_only_selected and not (any(layers_affected)
+                and any(b_tools.manipulate_layerlists('subtract', layers_other, layers_affected)))
+                    or (scene.get_original_scene().cb_clay_only and w_var.cb_clay_only_active)):
+                row.active = False
+                w_var.cb_composited_active = False
 
-                else:
-                    w_var.cb_composited_active = True
+            else:
+                w_var.cb_composited_active = True
 
             row.prop(context.scene, property='cb_composited', text='Composited wires')
 

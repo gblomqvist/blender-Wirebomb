@@ -193,17 +193,15 @@ class BlenderScene:
         layers -= layers_excluded
 
         # setting up objects and objects excluded
-        if objects is None:
-            objects = set()
-
         if objects_excluded is None:
             objects_excluded = set()
 
-        objects -= objects_excluded
+        if objects is not None:
+            objects -= objects_excluded
 
         previous_area = bpy.context.area.type
 
-        # can't be in 'PROPERTY' space when changing object select property
+        # can't change object select property while in the 'PROPERTIES' area
         bpy.context.area.type = 'VIEW_3D'
 
         # much quicker than looping through objects
@@ -211,7 +209,7 @@ class BlenderScene:
             bpy.ops.object.select_all(action=mode)
 
         elif mode == 'SELECT':
-            if len(objects) > 0:
+            if objects is not None:
                 for obj in scene.objects:
                     if ((obj in objects or 'ALL' in objects)
                             and obj.type in types and self.object_on_layer(obj, layers)):
@@ -230,7 +228,7 @@ class BlenderScene:
                         obj.select = False
 
         elif mode == 'DESELECT':
-            if len(objects) > 0:
+            if objects is not None:
                 for obj in scene.objects:
                     if ((obj in objects or 'ALL' in objects)
                             and obj.type in types and self.object_on_layer(obj, layers)):
@@ -248,32 +246,46 @@ class BlenderScene:
         self.set_active_object(types)
 
     def move_selected_to_layer(self, to_layer):
-        """Moves the selected objects to the given layer (to_layer).
+        """Moves the selected object(s) to the given layer(s) (to_layer).
 
         Args:
-            to_layer: An integer representing the layer to which the objects will be moved.
+            to_layer: An array consisting of integers representing the layers to which the object(s) will be moved.
         """
         scene = self.set_as_active()
-        new_layers = [False, ] * 20
-        new_layers[to_layer] = True
+        previous_layers = list(scene.layers)
+        previous_area = bpy.context.area.type
 
-        for obj in scene.objects:
-            if obj.select:
-                obj.layers = new_layers
+        layers = [False, ] * 20
+
+        for i in to_layer:
+            layers[i] = True
+
+        # can't move objects from inactive layers
+        scene.layers = (True,) * 20
+
+        # can't use operators while in the 'PROPERTIES' area
+        bpy.context.area.type = 'VIEW_3D'
+
+        bpy.ops.object.move_to_layer(layers=layers)
+
+        bpy.context.area.type = previous_area
+        scene.layers = previous_layers
 
     def copy_selected_to_layer(self, to_layer):
-        """Copies the selected objects to the given layer (to_layer).
+        """Copies the selected object(s) to the given layer(s) (to_layer).
 
         Args:
-            to_layer: An integer representing the layer to which the objects will be copied.
+            to_layer: An array consisting of integers representing the layers to which the object(s) will be copied.
         """
         scene = self.set_as_active()
-        previous_area = bpy.context.area.type
-        bpy.context.area.type = 'VIEW_3D'
         previous_layers = list(scene.layers)
+        previous_area = bpy.context.area.type
 
         # can't duplicate objects on inactive layers
         scene.layers = (True,) * 20
+
+        # can't use operators while in the 'PROPERTIES' area
+        bpy.context.area.type = 'VIEW_3D'
 
         bpy.ops.object.duplicate()
         self.move_selected_to_layer(to_layer)
@@ -282,19 +294,20 @@ class BlenderScene:
         scene.layers = previous_layers
 
     def copy_selected_to_scene(self, to_scene):
-        """Copies the selected objects to the given scene (to_scene).
+        """Copies the selected object(s) to the given scene (to_scene).
 
         Args:
             to_scene: A scene object representing the scene to which the objects will be copied.
         """
         scene = self.set_as_active()
-
-        previous_area = bpy.context.area.type
-        bpy.context.area.type = 'VIEW_3D'
         previous_layers = list(scene.layers)
+        previous_area = bpy.context.area.type
 
         # can't duplicate objects on inactive layers
         scene.layers = (True,) * 20
+
+        # can't use operators while in the 'PROPERTIES' area
+        bpy.context.area.type = 'VIEW_3D'
 
         bpy.ops.object.duplicate()
         bpy.ops.object.make_links_scene(scene=to_scene)
@@ -344,8 +357,9 @@ class BlenderScene:
 
         return selected_objects
 
-    def set_up_rlayer(self, new, rlname, visible_layers=None, include_layers=None, mask_layers=None):
-        """Sets up the scene's render layers.
+    def set_up_rlayer(self, new, rlname, visible_layers=None, include_layers=None,
+                      exclude_layers=None, mask_layers=None):
+        """Sets up a scene render layer.
 
         Args:
             new: A boolean which if True, a new render layer will be created. The name of this render layer is
@@ -355,6 +369,8 @@ class BlenderScene:
                 -i.e. all layers you want to render, which will aslo be visible in the viewport-in the new render layer.
             include_layers: An optional list consisting of integers representing the layers
                 you want to be included in the new render layer (specific for this render layer).
+            exclude_layers: An optional list consisting of integers representing the layers
+                you want to be excluded in the new render layer (specific for this render layer).
             mask_layers: An optional list consisting of integers representing the layers
                 you want to be masked in the new render layer (specific for this render layer).
         """
@@ -366,6 +382,9 @@ class BlenderScene:
 
         if include_layers is None:
             include_layers = layer_numbers
+
+        if exclude_layers is None:
+            exclude_layers = []
 
         if mask_layers is None:
             mask_layers = []
@@ -379,26 +398,29 @@ class BlenderScene:
         scene.render.layers[rlname].layers[19] = True
 
         for i in layer_numbers:
-            if include_layers is not None:
-                if i in include_layers:
-                    scene.render.layers[rlname].layers[i] = True
+            if i in include_layers:
+                scene.render.layers[rlname].layers[i] = True
 
-                else:
-                    scene.render.layers[rlname].layers[i] = False
+            else:
+                scene.render.layers[rlname].layers[i] = False
 
-            if visible_layers is not None:
-                if i in visible_layers:
-                    scene.layers[i] = True
+            if i in visible_layers:
+                scene.layers[i] = True
 
-                else:
-                    scene.layers[i] = False
+            else:
+                scene.layers[i] = False
 
-            if mask_layers is not None:
-                if i in mask_layers:
-                    scene.render.layers[rlname].layers_zmask[i] = True
+            if i in exclude_layers:
+                scene.render.layers[rlname].layers_exclude[i] = True
 
-                else:
-                    scene.render.layers[rlname].layers_zmask[i] = False
+            else:
+                scene.render.layers[rlname].layers_exclude[i] = False
+
+            if i in mask_layers:
+                scene.render.layers[rlname].layers_zmask[i] = True
+
+            else:
+                scene.render.layers[rlname].layers_zmask[i] = False
 
     def view3d_pivotpoint(self, action, pivotpoint=None):
         """Manipulates the 3D view's pivot point by setting it or getting it.
@@ -413,6 +435,8 @@ class BlenderScene:
         """
         self.set_as_active()
         previous_area = bpy.context.area.type
+
+        # can't change pivot point while in the 'PROPERTIES' area
         bpy.context.area.type = 'VIEW_3D'
 
         if action == 'set':

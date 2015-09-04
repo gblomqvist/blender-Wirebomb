@@ -43,14 +43,32 @@ def set_layers_other(layers_affected):
 
 
 def set_variables(context):
-    """Sets variables in w_var with data from UI.
+    """Sets variables in w_var with data from the UI, also resets some variables.
 
     Args:
         context: Scene context object.
     """
+
+    # resetting unique IDs for use in real-time color change and wireframe modifier thickness change
+    w_var.node_wireframe_diffuse = ''
+    w_var.node_clay_diffuse = ''
+    w_var.modifier_wireframe = ''
+
+    # resetting render layer names
+    w_var.rlname = ''
+    w_var.rlname_2 = ''
+    w_var.rlname_other = ''
+
+    # resetting objects selected
     w_var.objects_affected = set()
     w_var.objects_other = set()
     w_var.objects_all_used = set()
+
+    # resetting materials
+    w_var.wire_freestyle_linestyle = None
+    w_var.wire_modifier_mat = None
+    w_var.wire_bi_mat = None
+    w_var.clay_mat = None
 
     # original scene
     w_var.original_scene = context.scene
@@ -144,6 +162,7 @@ def error_check(context):
     if w_var.wireframe_method == 'WIREFRAME_BI' and len(w_var.scene_name_2) == 0:
         error_msg += '- No clay/other scene name!\n'
         success = False
+
         # used for row alert in __init__.py
         w_var.error_302 = True
 
@@ -281,19 +300,19 @@ def set_up_wireframe_bi():
         bpy.context.window_manager.progress_update(26)
 
         # sets up renderlayer
-        wire_scene.set_up_rlayer('wireframe', [0, 1], [0], [1])
+        wire_scene.set_up_rlayer('wireframe', [0, 1], [0], mask_layers=[1])
 
         # selects and moves all affected objects to layer 0, then copies them to layer 1
         wire_scene.select('SELECT', objects_excluded={'ELSE'})
-        wire_scene.move_selected_to_layer(0)
-        wire_scene.copy_selected_to_layer(1)
+        wire_scene.move_selected_to_layer([0])
+        wire_scene.copy_selected_to_layer([1])
 
         # updates progress bar to 33 %
         bpy.context.window_manager.progress_update(33)
 
         # selects and moves all 'other' objects to layer 1
         wire_scene.select('SELECT', objects=w_var.objects_other, objects_excluded={'ELSE'})
-        wire_scene.move_selected_to_layer(1)
+        wire_scene.move_selected_to_layer([1])
 
         # updates progress bar to 37 %
         bpy.context.window_manager.progress_update(38)
