@@ -81,7 +81,7 @@ def set_variables(context):
     w_var.cb_backup = context.scene.cb_backup
     w_var.cb_clear_rlayers = context.scene.cb_clear_rlayers
     w_var.cb_clear_materials = context.scene.cb_clear_materials
-    w_var.cb_composited = w_var.cb_composited_active and context.scene.cb_composited
+    w_var.cb_composited = context.scene.cb_composited
     w_var.cb_only_selected = context.scene.cb_only_selected
     w_var.cb_ao = context.scene.cb_ao
     w_var.cb_clay = context.scene.cb_clay

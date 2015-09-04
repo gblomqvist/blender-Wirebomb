@@ -7,7 +7,6 @@ error_301 = False  # no wire scene name
 error_302 = False  # no clay scene name
 
 # if checkboxes are active
-cb_composited_active = None
 cb_clay_only_active = None
 cb_mat_wire_active = None
 cb_mat_clay_active = None

@@ -119,6 +119,11 @@ def update_wire_thickness(self, context):
                 if w_var.modifier_wireframe in obj.modifiers:
                     obj.modifiers[w_var.modifier_wireframe].thickness = context.scene.slider_wt_modifier
 
+
+def update_cb_composited(self, context):
+    if context.scene.wireframe_method != 'WIREFRAME_FREESTYLE':
+        context.scene.cb_composited = False
+
 # creates drop-down list with different wireframe methods
 bpy.types.Scene.wireframe_method = bpy.props.EnumProperty(
     items=[('WIREFRAME_MODIFIER', 'Modifier', 'Create wireframe using cycles and the wireframe modifier'),
@@ -126,7 +131,8 @@ bpy.types.Scene.wireframe_method = bpy.props.EnumProperty(
            ('WIREFRAME_BI', 'Blender Internal', 'Create wireframe using blender\'s internal renderer')],
     name='Method',
     description='Wireframe method',
-    default='WIREFRAME_FREESTYLE')
+    default='WIREFRAME_FREESTYLE',
+    update=update_cb_composited)
 
 # creates all checkboxes
 bpy.types.Scene.cb_backup = bpy.props.BoolProperty(default=True, description="Create a backup scene")
@@ -256,18 +262,6 @@ class WireframePanel(bpy.types.Panel):
         row = col.row()
 
         if scene.get_original_scene().wireframe_method == 'WIREFRAME_FREESTYLE':
-            layers_affected = list(scene.get_original_scene().layers_affected)
-            layers_other = list(scene.get_original_scene().layers_other)
-
-            if (not scene.get_original_scene().cb_only_selected and not (any(layers_affected)
-                and any(b_tools.manipulate_layerlists('subtract', layers_other, layers_affected)))
-                    or (scene.get_original_scene().cb_clay_only and w_var.cb_clay_only_active)):
-                row.active = False
-                w_var.cb_composited_active = False
-
-            else:
-                w_var.cb_composited_active = True
-
             row.prop(context.scene, property='cb_composited', text='Composited wires')
 
         # only selected
