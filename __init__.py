@@ -1,13 +1,5 @@
 # <pep8-80 compliant>
 
-import bpy
-from .w_b_scene import BlenderSceneW
-from . import w_tools
-from . import b_tools
-from . import w_operators
-from . import w_var
-from . import constants
-
 bl_info = {
     "name": "Cycles Wireframe and Clay",
     "author": "Gustaf Blomqvist",
@@ -41,6 +33,14 @@ if 'bpy' in locals():
 
     if 'constants' in locals():
         importlib.reload(constants)
+
+import bpy
+from .w_b_scene import BlenderSceneW
+from . import w_tools
+from . import b_tools
+from . import w_operators
+from . import w_var
+from . import constants
 
 
 def register():

@@ -68,7 +68,7 @@ class QuickRemoveOperator(bpy.types.Operator):
 
         # iterates over copy because original is being changed
         for scene in list(w_var.created_scenes):
-            if scene.name in bpy.data.scenes:  # TODO: This line creates decoding error (very rare bug)
+            if scene.name in bpy.data.scenes:
                 bpy.data.scenes.remove(scene)
                 w_var.created_scenes.remove(scene)
 

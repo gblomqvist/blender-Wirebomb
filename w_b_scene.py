@@ -22,7 +22,6 @@ class BlenderSceneW(BlenderScene):
             renderer: An optional string representing the (new) scene's render engine, e.g. 'CYCLES'. Must be set if
                 new_scene is set to True.
         """
-        print(super(BlenderSceneW))
         super(BlenderSceneW, self).__init__(scene, backup_scene, new_name, renderer)
 
         if backup_scene:
