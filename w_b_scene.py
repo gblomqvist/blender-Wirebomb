@@ -9,26 +9,6 @@ from . import constants
 class BlenderSceneW(BlenderScene):
     """A version of the class BlenderScene that is specific for this add-on."""
 
-    def __init__(self, scene, backup_scene, new_name=None, renderer=None):
-        """Creates a full copy of scene if new_scene is set to True.
-
-        Special version of BlenderScene's __init__ function, saves created scenes to a variable.
-
-        Args:
-            scene: A scene object which represents the scene to start from.
-            new_scene: A boolean that if True, a full copy of scene will be created.
-            new_name: An optional string representing the (new) scene's name. Must be set if new_scene is set
-                to True.
-            renderer: An optional string representing the (new) scene's render engine, e.g. 'CYCLES'. Must be set if
-                new_scene is set to True.
-        """
-        super(BlenderSceneW, self).__init__(scene, backup_scene, new_name, renderer)
-
-        if backup_scene:
-
-            # saves created scene in collection property for 'Quick Remove' operator
-            bpy.context.scene.cwac.data_scenes_created.add().name = self.name
-
     def select(self, mode, types=None, types_excluded=None, layers=None, layers_excluded=None,
                objects=None, objects_excluded=None):
         """Selects or deselects objects, a special version of BlenderScene's select function.

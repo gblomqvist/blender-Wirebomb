@@ -56,30 +56,6 @@ class WireframeOperator(bpy.types.Operator):
         return self.execute(context)
 
 
-class QuickRemoveOperator(bpy.types.Operator):
-    """Removes all scenes created through this add-on from this scene"""
-    bl_label = "Quick remove"
-    bl_idname = 'scene.cwac_quick_remove'
-
-    def __init__(self):
-        self.start = time.time()
-
-    def execute(self, context):
-
-        scenes_created = context.scene.cwac.data_scenes_created
-
-        # removes scenes from blender
-        for col_scene in scenes_created:
-            if col_scene.name in bpy.data.scenes:
-                bpy.data.scenes.remove(bpy.data.scenes[col_scene.name])
-
-        # removes scenes from collection property
-        scenes_created.clear()
-
-        self.report({'INFO'}, "Remove done in {} seconds!".format(round(time.time() - self.start, 2)))
-        return {'FINISHED'}
-
-
 class ConfigSaveOperator(bpy.types.Operator):
     """Saves a config INI file"""
     bl_label = "Save INI file"

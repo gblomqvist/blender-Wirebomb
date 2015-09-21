@@ -126,9 +126,6 @@ class CWaC(bpy.types.PropertyGroup):
     data_objects_other = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
     data_objects_all = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
 
-    # scenes created through this add-on
-    data_scenes_created = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
-
     # drop-down list with different wireframe methods
     wireframe_method = bpy.props.EnumProperty(
         items=[('WIREFRAME_MODIFIER', 'Modifier', 'Create wireframe using cycles and the wireframe modifier'),
