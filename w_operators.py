@@ -24,16 +24,11 @@ class WireframeOperator(bpy.types.Operator):
             context.window_manager.progress_update(1)
 
             # runs wireframing
-            if w_var.wireframe_method == 'WIREFRAME_BI':
-                w_tools.set_up_wireframe_bi()
-
-            elif w_var.wireframe_method == 'WIREFRAME_FREESTYLE':
+            if w_var.wireframe_method == 'WIREFRAME_FREESTYLE':
                 w_tools.set_up_wireframe_freestyle()
 
             elif w_var.wireframe_method == 'WIREFRAME_MODIFIER':
                 w_tools.set_up_wireframe_modifier()
-
-            w_tools.update_material_lists()
 
             # terminates the progress bar
             context.window_manager.progress_end()

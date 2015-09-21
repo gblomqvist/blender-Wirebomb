@@ -51,7 +51,6 @@ def set_variables(context):
 
     # resetting render layer names
     w_var.rlname = ''
-    w_var.rlname_2 = ''
     w_var.rlname_other = ''
 
     # resetting objects selected
@@ -99,9 +98,8 @@ def set_variables(context):
     # affected and other layers together, | is logical OR operator
     w_var.layer_numbers_all_used = w_var.layer_numbers_affected | w_var.layer_numbers_other
 
-    # scene names set
+    # scene name set
     w_var.scene_name_1 = context.scene.cwac.scene_name_1
-    w_var.scene_name_2 = context.scene.cwac.scene_name_2
 
 
 def error_check(context):
@@ -147,13 +145,6 @@ def error_check(context):
 
         # used for row alert in __init__.py
         w_var.error_301 = True
-
-    if w_var.wireframe_method == 'WIREFRAME_BI' and len(w_var.scene_name_2) == 0:
-        error_msg += '- No clay/other scene name!\n'
-        success = False
-
-        # used for row alert in __init__.py
-        w_var.error_302 = True
 
     return success, error_msg
 
@@ -228,12 +219,9 @@ def config_load(context, filepath):
         if 'layers_other' in config['LAYERS SELECTED']:
             context.scene.cwac.layers_other = eval(config['LAYERS SELECTED']['layers_other'])
 
-    if 'SCENE NAMES SET' in config:
-        if 'scene_name_1' in config['SCENE NAMES SET']:
-            context.scene.cwac.scene_name_1 = config['SCENE NAMES SET']['scene_name_1']
-
-        if 'scene_name_2' in config['SCENE NAMES SET']:
-            context.scene.cwac.scene_name_2 = config['SCENE NAMES SET']['scene_name_2']
+    if 'SCENE NAME SET' in config:
+        if 'scene_name_1' in config['SCENE NAME SET']:
+            context.scene.cwac.scene_name_1 = config['SCENE NAME SET']['scene_name_1']
 
 
 def config_save(context, filepath):
@@ -266,154 +254,10 @@ def config_save(context, filepath):
     config['LAYERS SELECTED'] = {'layers_affected': list(context.scene.cwac.layers_affected),
                                  'layers_other': list(context.scene.cwac.layers_other)}
 
-    config['SCENE NAMES SET'] = {'scene_name_1': context.scene.cwac.scene_name_1,
-                                 'scene_name_2': context.scene.cwac.scene_name_2}
+    config['SCENE NAME SET'] = {'scene_name_1': context.scene.cwac.scene_name_1}
 
     with open(filepath, 'w') as configfile:
         config.write(configfile)
-
-
-def update_material_lists():
-    """Updates material lists items to be what they were before in backup scene and wireframe scene(s), as long as the
-    items were not empty strings."""
-    if len(w_var.mat_wire_name) > 0:
-        if not (w_var.wireframe_method == 'WIREFRAME_BI' and w_var.cb_clay_only):
-            bpy.data.scenes[w_var.scene_name_1].cwac.material_wire = w_var.mat_wire_name
-
-            if w_var.wireframe_method == 'WIREFRAME_BI':
-                bpy.data.scenes[w_var.scene_name_2].cwac.material_wire = w_var.mat_wire_name
-
-            if w_var.cb_backup:
-                w_var.original_scene.cwac.material_wire = w_var.mat_wire_name
-
-        else:
-            bpy.data.scenes[w_var.scene_name_2].cwac.material_wire = w_var.mat_wire_name
-
-    if len(w_var.mat_clay_name) > 0:
-        if not (w_var.wireframe_method == 'WIREFRAME_BI' and w_var.cb_clay_only):
-            bpy.data.scenes[w_var.scene_name_1].cwac.material_clay = w_var.mat_clay_name
-
-            if w_var.wireframe_method == 'WIREFRAME_BI':
-                bpy.data.scenes[w_var.scene_name_2].cwac.material_clay = w_var.mat_clay_name
-
-            if w_var.cb_backup:
-                w_var.original_scene.cwac.material_clay = w_var.mat_clay_name
-
-        else:
-            bpy.data.scenes[w_var.scene_name_2].cwac.material_clay = w_var.mat_clay_name
-
-
-def set_up_wireframe_bi():
-    """Sets up the complete wireframe using the blender internal setup."""
-
-    # sets up a wireframe scene
-    if not w_var.cb_clay_only:
-
-        # creates wireframe scene
-        wire_scene = BlenderSceneW(w_var.original_scene, True, w_var.scene_name_1, 'BLENDER_RENDER')
-
-        # sets all used objects to three sets: affected objects, other object and all used objects
-        # (need to do after I copy the scene to get the objects from the copied scene)
-        wire_scene.add_objects_used()
-
-        # changes 3D view pivot point to bounding box center for scaling to work as expected later on
-        original_pivotpoint = wire_scene.view3d_pivotpoint('get')
-        wire_scene.view3d_pivotpoint('set', 'BOUNDING_BOX_CENTER')
-
-        # updates progress bar to 14 %
-        bpy.context.window_manager.progress_update(14)
-
-        # deletes unnecessary objects and removes all materials from the affected meshes
-        wire_scene.clean_objects()
-        wire_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
-        wire_scene.clear_materials_on_selected()
-
-        # updates progress bar to 26 %
-        bpy.context.window_manager.progress_update(26)
-
-        # sets up renderlayer
-        wire_scene.set_up_rlayer('wireframe', [0, 1], [0], mask_layers=[1])
-
-        # selects and moves all affected objects to layer 0, then copies them to layer 1
-        wire_scene.select('SELECT', objects_excluded={'ELSE'})
-        wire_scene.move_selected_to_layer([0])
-        wire_scene.copy_selected_to_layer([1])
-
-        # updates progress bar to 33 %
-        bpy.context.window_manager.progress_update(33)
-
-        # selects and moves all 'other' objects to layer 1
-        wire_scene.select('SELECT', objects=w_var.objects_other, objects_excluded={'ELSE'})
-        wire_scene.move_selected_to_layer([1])
-
-        # updates progress bar to 37 %
-        bpy.context.window_manager.progress_update(38)
-
-        # sets up wireframe material on affected meshes and saves material name
-        wire_scene.get_scene().cwac.data_material_wire = wire_scene.add_wireframe_bi().name
-
-        # sets render alpha mode to transparent, to be able to composite this wireframe on top of the clay later
-        bpy.data.scenes[wire_scene.name].render.alpha_mode = 'TRANSPARENT'
-
-        # changes back to original 3D view pivot point and deselects all objects as a last thing to clean up
-        wire_scene.view3d_pivotpoint('set', original_pivotpoint)
-        wire_scene.select('DESELECT', objects={'ALL'})
-
-        # updates progress bar to 55 %
-        bpy.context.window_manager.progress_update(55)
-
-        # creates clay/other scene
-        clay_scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_2, 'CYCLES')
-
-        # sets up renderlayer and composition for wireframe (and ambient occlusion lighting if used)
-        # (need to set up render layer before composition)
-        clay_scene.set_up_rlayer('clay')
-        clay_scene.comp_add_wireframe_bi(wire_scene)
-
-    # only sets up a clay scene
-    else:
-        # creates clay scene
-        clay_scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_2, 'CYCLES')
-
-        # updates progress bar to 30 % and sets up render layer
-        bpy.context.window_manager.progress_update(30)
-        clay_scene.set_up_rlayer('clay')
-
-    # updates progress bar to 60 %
-    bpy.context.window_manager.progress_update(60)
-
-    # sets all used objects to three sets: affected objects, other object and all used objects
-    # (need to do after I copy the scene to get the objects from the copied scene)
-    clay_scene.add_objects_used()
-
-    # updates progress bar to 72 %
-    bpy.context.window_manager.progress_update(72)
-
-    if w_var.cb_clear_materials:
-
-        # removes all materials from affected meshes
-        clay_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
-        clay_scene.clear_materials_on_selected()
-
-    # updates progress bar to 85 %
-    bpy.context.window_manager.progress_update(85)
-
-    if w_var.cb_clay:
-
-        # adds clay material to affected meshes and saves material name
-        clay_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
-        clay_scene.get_scene().cwac.data_material_clay = clay_scene.add_clay_to_selected().name
-
-    # updates progress bar to 99 %
-    bpy.context.window_manager.progress_update(99)
-
-    if w_var.cb_ao:
-
-        # sets up ambient occlusion lighting
-        clay_scene.set_up_world_ao()
-
-    # deselects all objects as a last thing to clean up
-    clay_scene.select('DESELECT', objects={'ALL'})
 
 
 def set_up_wireframe_freestyle():

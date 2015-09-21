@@ -73,12 +73,6 @@ def update_color_wire(self, context):
             # updating viewport color
             material.diffuse_color = context.scene.cwac.color_wire[0:3]
 
-    elif context.scene.cwac.wireframe_method == 'WIREFRAME_BI':
-        if context.scene.cwac.data_material_wire in bpy.data.materials:
-            material = bpy.data.materials[context.scene.cwac.data_material_wire]
-            material.diffuse_color = context.scene.cwac.color_wire[0:3]
-            material.alpha = context.scene.cwac.color_wire[-1]
-
 
 def update_color_clay(self, context):
     """Updates the clay material's color."""
@@ -203,10 +197,6 @@ class CWaC(bpy.types.PropertyGroup):
     scene_name_1 = bpy.props.StringProperty(default='wireframe',
                                             maxlen=47,
                                             description="The wireframe/clay scene's name")
-    scene_name_2 = bpy.props.StringProperty(default='clay',
-                                            maxlen=47,
-                                            description="The clay/other scene's name "
-                                                        "(depending on if you use clay or not)")
 
 
 class WireframePanel(bpy.types.Panel):
@@ -381,19 +371,15 @@ class WireframePanel(bpy.types.Panel):
         row.prop_search(context.scene.cwac, 'material_clay', bpy.data, 'materials', text='')
 
         # wire thickness
-        if scene.get_original_scene().cwac.wireframe_method != 'WIREFRAME_BI':
-            layout.separator()
-            row = layout.row()
-            row.label('Wire thickness:')
+        layout.separator()
+        row = layout.row()
+        row.label('Wire thickness:')
 
-            if scene.get_original_scene().cwac.wireframe_method == 'WIREFRAME_BI':
-                row.active = False
+        if scene.get_original_scene().cwac.wireframe_method == 'WIREFRAME_FREESTYLE':
+            row.prop(context.scene.cwac, property='slider_wt_freestyle', text='Thickness')
 
-            if scene.get_original_scene().cwac.wireframe_method in 'WIREFRAME_FREESTYLE':
-                row.prop(context.scene.cwac, property='slider_wt_freestyle', text='Thickness')
-
-            elif scene.get_original_scene().cwac.wireframe_method == 'WIREFRAME_MODIFIER':
-                row.prop(context.scene.cwac, property='slider_wt_modifier', text='Thickness')
+        elif scene.get_original_scene().cwac.wireframe_method == 'WIREFRAME_MODIFIER':
+            row.prop(context.scene.cwac, property='slider_wt_modifier', text='Thickness')
 
         # 'affected layers' buttons
         layout.separator()
@@ -428,34 +414,10 @@ class WireframePanel(bpy.types.Panel):
         else:
             w_var.error_301 = False
 
-        if (scene.get_original_scene().cwac.cb_clay_only and w_var.cb_clay_only_active and
-                scene.get_original_scene().cwac.wireframe_method != 'WIREFRAME_BI'):
-            row.prop(context.scene.cwac, property='scene_name_1', text='Clay scene name')
-
-        else:
-            row.prop(context.scene.cwac, property='scene_name_1', text='Wire scene name')
-
-            if scene.get_original_scene().cwac.cb_clay_only and w_var.cb_clay_only_active:
-                row.active = False
-
-        # scene name 2
-        if scene.get_original_scene().cwac.wireframe_method == 'WIREFRAME_BI':
-            row = layout.row()
-
-            if w_var.error_302 and len(scene.get_original_scene().cwac.scene_name_2) == 0:
-                row.alert = True
-
-            else:
-                w_var.error_302 = False
-
-            if scene.get_original_scene().cwac.cb_clay:
-                row.prop(context.scene.cwac, property='scene_name_2', text='Clay scene name')
-            else:
-                row.prop(context.scene.cwac, property='scene_name_2', text='Other scene name')
+        row.prop(context.scene.cwac, property='scene_name_1', text='Scene name')
 
         # 'set up new' and 'quick remove' buttons
         layout.separator()
-        col = layout.column(align=True)
-        col.scale_y = 1.2
-        col.operator(operator='scene.cwac_set_up_new', text='Set up new', icon='WIRE')
-        col.operator(operator='scene.cwac_quick_remove', text='Quick remove', icon='X')
+        row = layout.row()
+        row.scale_y = 1.3
+        row.operator(operator='scene.cwac_set_up_new', text='Set up new', icon='WIRE')

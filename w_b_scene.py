@@ -161,12 +161,7 @@ class BlenderSceneW(BlenderScene):
             new_rlayer = scene.render.layers.new(rlname)
             scene.render.layers.active = new_rlayer
 
-        if w_var.rlname == '':
-            w_var.rlname = new_rlayer.name
-
-        # only used for blender internal wireframe, two scenes require two render layers
-        else:
-            w_var.rlname_2 = new_rlayer.name
+        w_var.rlname = new_rlayer.name
 
         # there needs to be two render layers in the same scene for freestyle compositing
         if w_var.cb_composited:
@@ -226,83 +221,6 @@ class BlenderSceneW(BlenderScene):
 
             else:
                 scene.render.layers[rlname].layers_exclude[i] = False
-
-    def clean_objects(self):
-        """Deletes all objects in blender internal that is not going to get wireframed.
-
-        This is for the wireframe type 'Blender Internal'.
-        """
-        scene = self.set_as_active()
-        previous_area = bpy.context.area.type
-        bpy.context.area.type = 'VIEW_3D'
-        previous_layers = list(scene.layers)
-
-        # can't delete objects on inactive layers
-        scene.layers = (True,)*20
-        self.select('DESELECT', objects={'ALL'})
-
-        for obj in scene.objects:
-            if obj not in w_var.objects_all_used:
-                obj.select = True
-                bpy.ops.object.delete()
-
-        scene.layers = previous_layers
-        bpy.context.area.type = previous_area
-
-    def comp_add_wireframe_bi(self, wire_scene_intance):
-        """Sets up the compositor nodes for the wireframe type 'Blender Internal'.
-
-        Args:
-            wire_scene_instance: An instance of the class BlenderSceneW representing the wire scene.
-        """
-        scene = self.set_as_active()
-
-        scene.use_nodes = True
-        tree = scene.node_tree
-        tree.nodes.clear()
-
-        # creating the nodes
-        node_alphaover = tree.nodes.new('CompositorNodeAlphaOver')
-        node_alphaover.location = -100, -80
-
-        node_rlwire = tree.nodes.new('CompositorNodeRLayers')
-        node_rlwire.location = -400, -75
-        node_rlwire.scene = bpy.data.scenes[wire_scene_intance.name]
-        node_rlwire.layer = w_var.rlname
-
-        node_rlclay = tree.nodes.new('CompositorNodeRLayers')
-        node_rlclay.location = -400, 250
-        node_rlclay.scene = scene
-        node_rlclay.layer = w_var.rlname_2
-
-        node_comp = tree.nodes.new('CompositorNodeComposite')
-        node_comp.location = 400, 65
-
-        node_viewer = tree.nodes.new('CompositorNodeViewer')
-        node_viewer.location = 400, -125
-
-        # connecting the nodes
-        links = tree.links
-        links.new(node_rlclay.outputs[0], node_alphaover.inputs[1])
-        links.new(node_rlwire.outputs[0], node_alphaover.inputs[2])
-
-        if w_var.cb_ao:
-            node_mixcolor = tree.nodes.new('CompositorNodeMixRGB')
-            node_mixcolor.location = 100, 140
-            node_mixcolor.blend_type = 'MULTIPLY'
-            node_mixcolor.inputs[0].default_value = 0.73
-
-            links.new(node_alphaover.outputs[0], node_mixcolor.inputs[1])
-            links.new(node_rlclay.outputs[10], node_mixcolor.inputs[2])
-            links.new(node_mixcolor.outputs[0], node_comp.inputs[0])
-            links.new(node_mixcolor.outputs[0], node_viewer.inputs[0])
-
-        else:
-            links.new(node_alphaover.outputs[0], node_comp.inputs[0])
-            links.new(node_alphaover.outputs[0], node_viewer.inputs[0])
-
-        for node in tree.nodes:
-            node.select = False
 
     def comp_add_wireframe_freestyle(self):
         """Sets up the compositor nodes for the wireframe type 'Freestyle'."""
@@ -494,45 +412,6 @@ class BlenderSceneW(BlenderScene):
         bpy.context.area.type = previous_area
 
         return clay_mat
-
-    def add_wireframe_bi(self):
-        """Creates and sets up the wireframe material in blender internal.
-
-        Returns:
-            The wireframe material data object.
-        """
-        self.set_as_active()
-
-        # if the user selected a material, use it
-        if w_var.cb_mat_wire:
-            wireframe_mat = bpy.data.materials[w_var.mat_wire_name]
-
-        # else, create a new one with the color selected
-        else:
-            wire_color = w_var.color_wire
-
-            # separating rgb and alpha
-            wire_color_rgb = wire_color[0:3]
-            wire_color_alpha = wire_color[-1]
-
-            wireframe_mat = bpy.data.materials.new('wireframe')
-            wireframe_mat.type = 'WIRE'
-            wireframe_mat.diffuse_color = wire_color_rgb
-            wireframe_mat.use_transparency = True
-            wireframe_mat.alpha = wire_color_alpha
-            wireframe_mat.use_shadeless = True
-            wireframe_mat.offset_z = 0.028
-
-        self.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
-        bpy.context.active_object.data.materials.append(wireframe_mat)
-        previous_area = bpy.context.area.type
-
-        # can't copy material slot in 'PROPERTY' space
-        bpy.context.area.type = 'VIEW_3D'
-        bpy.ops.object.material_slot_copy()
-        bpy.context.area.type = previous_area
-
-        return wireframe_mat
 
     def add_wireframe_modifier(self):
         """Creates and sets up the wireframe modifier and material in cycles.

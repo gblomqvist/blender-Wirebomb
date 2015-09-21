@@ -16,7 +16,6 @@ original_scene = None
 
 # render layer names
 rlname = ''
-rlname_2 = ''
 rlname_other = ''
 
 # objects selected
@@ -60,6 +59,5 @@ layer_numbers_other = set()
 # affected and other layers together
 layer_numbers_all_used = set()
 
-# scene names set
+# scene name set
 scene_name_1 = ''
-scene_name_2 = ''
