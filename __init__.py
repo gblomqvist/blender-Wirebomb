@@ -350,7 +350,7 @@ class WireframePanel(bpy.types.Panel):
         else:
             w_var.cb_mat_clay_active = True
 
-        if scene.get_scene().cwac.cb_mat_clay and scene.get_scene().cwac.material_wire == '':
+        if scene.get_scene().cwac.cb_mat_clay and scene.get_scene().cwac.material_clay == '':
             row.alert = True
 
         row.prop(context.scene.cwac, property='cb_mat_clay', text='Use material:')
