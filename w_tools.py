@@ -22,7 +22,7 @@ def set_layers_affected():
                 layers_affected = b_tools.manipulate_layerlists('add', layers_affected, obj.layers)
 
     else:
-        layers_affected = list(w_var.original_scene.layers_affected)
+        layers_affected = list(w_var.original_scene.cwac.layers_affected)
 
     return layers_affected
 
@@ -33,7 +33,7 @@ def set_layers_other(layers_affected):
     Returns:
         A list with booleans representing all the layers that will be included in the render layer just as they are.
     """
-    layers_other = list(w_var.original_scene.layers_other)
+    layers_other = list(w_var.original_scene.cwac.layers_other)
 
     for index in range(0, 20):
         if layers_other[index] and layers_affected[index]:
@@ -49,11 +49,6 @@ def set_variables(context):
         context: Scene context object.
     """
 
-    # resetting unique IDs for use in real-time color change and wireframe modifier thickness change
-    w_var.node_wireframe_diffuse = ''
-    w_var.node_clay_diffuse = ''
-    w_var.modifier_wireframe = ''
-
     # resetting render layer names
     w_var.rlname = ''
     w_var.rlname_2 = ''
@@ -64,42 +59,36 @@ def set_variables(context):
     w_var.objects_other = set()
     w_var.objects_all_used = set()
 
-    # resetting materials
-    w_var.wire_freestyle_linestyle = None
-    w_var.wire_modifier_mat = None
-    w_var.wire_bi_mat = None
-    w_var.clay_mat = None
-
     # original scene
     w_var.original_scene = context.scene
 
     # from interface:
     # wireframe type
-    w_var.wireframe_method = context.scene.wireframe_method
+    w_var.wireframe_method = context.scene.cwac.wireframe_method
 
     # checkboxes
-    w_var.cb_backup = context.scene.cb_backup
-    w_var.cb_clear_rlayers = context.scene.cb_clear_rlayers
-    w_var.cb_clear_materials = context.scene.cb_clear_materials
-    w_var.cb_composited = context.scene.cb_composited
-    w_var.cb_only_selected = context.scene.cb_only_selected
-    w_var.cb_ao = context.scene.cb_ao
-    w_var.cb_clay = context.scene.cb_clay
-    w_var.cb_clay_only = w_var.cb_clay_only_active and context.scene.cb_clay_only
-    w_var.cb_mat_wire = w_var.cb_mat_wire_active and context.scene.cb_mat_wire
-    w_var.cb_mat_clay = w_var.cb_mat_clay_active and context.scene.cb_mat_clay
+    w_var.cb_backup = context.scene.cwac.cb_backup
+    w_var.cb_clear_rlayers = context.scene.cwac.cb_clear_rlayers
+    w_var.cb_clear_materials = context.scene.cwac.cb_clear_materials
+    w_var.cb_composited = context.scene.cwac.cb_composited
+    w_var.cb_only_selected = context.scene.cwac.cb_only_selected
+    w_var.cb_ao = context.scene.cwac.cb_ao
+    w_var.cb_clay = context.scene.cwac.cb_clay
+    w_var.cb_clay_only = w_var.cb_clay_only_active and context.scene.cwac.cb_clay_only
+    w_var.cb_mat_wire = w_var.cb_mat_wire_active and context.scene.cwac.cb_mat_wire
+    w_var.cb_mat_clay = w_var.cb_mat_clay_active and context.scene.cwac.cb_mat_clay
 
     # colors set
-    w_var.color_wire = context.scene.color_wire
-    w_var.color_clay = context.scene.color_clay
+    w_var.color_wire = context.scene.cwac.color_wire
+    w_var.color_clay = context.scene.cwac.color_clay
 
     # materials set (names)
-    w_var.mat_wire_name = context.scene.materials.wire
-    w_var.mat_clay_name = context.scene.materials.clay
+    w_var.mat_wire_name = context.scene.cwac.material_wire
+    w_var.mat_clay_name = context.scene.cwac.material_clay
 
     # sliders
-    w_var.slider_wt_freestyle = context.scene.slider_wt_freestyle
-    w_var.slider_wt_modifier = context.scene.slider_wt_modifier
+    w_var.slider_wt_freestyle = context.scene.cwac.slider_wt_freestyle
+    w_var.slider_wt_modifier = context.scene.cwac.slider_wt_modifier
 
     # layers selected
     layers_affected = set_layers_affected()
@@ -111,8 +100,8 @@ def set_variables(context):
     w_var.layer_numbers_all_used = w_var.layer_numbers_affected | w_var.layer_numbers_other
 
     # scene names set
-    w_var.scene_name_1 = context.scene.scene_name_1
-    w_var.scene_name_2 = context.scene.scene_name_2
+    w_var.scene_name_1 = context.scene.cwac.scene_name_1
+    w_var.scene_name_2 = context.scene.cwac.scene_name_2
 
 
 def error_check(context):
@@ -175,33 +164,76 @@ def config_load(context, filepath):
     config = configparser.ConfigParser()
     config.read(filepath)
 
-    context.scene.wireframe_method = config['WIREFRAME TYPE']['wireframe_method']
+    if 'WIREFRAME TYPE' in config and 'wireframe_method' in config['WIREFRAME TYPE']:
+        context.scene.cwac.wireframe_method = config['WIREFRAME TYPE']['wireframe_method']
 
-    context.scene.cb_backup = eval(config['CHECKBOXES']['cb_backup'])
-    context.scene.cb_clear_rlayers = eval(config['CHECKBOXES']['cb_clear_rlayers'])
-    context.scene.cb_clear_materials = eval(config['CHECKBOXES']['cb_clear_materials'])
-    context.scene.cb_composited = eval(config['CHECKBOXES']['cb_composited'])
-    context.scene.cb_only_selected = eval(config['CHECKBOXES']['cb_only_selected'])
-    context.scene.cb_ao = eval(config['CHECKBOXES']['cb_ao'])
-    context.scene.cb_clay = eval(config['CHECKBOXES']['cb_clay'])
-    context.scene.cb_clay_only = eval(config['CHECKBOXES']['cb_clay_only'])
-    context.scene.cb_mat_wire = eval(config['CHECKBOXES']['cb_mat_wire'])
-    context.scene.cb_mat_clay = eval(config['CHECKBOXES']['cb_mat_clay'])
+    if 'CHECKBOXES' in config:
+        if 'cb_backup' in config['CHECKBOXES']:
+            context.scene.cwac.cb_backup = eval(config['CHECKBOXES']['cb_backup'])
 
-    context.scene.color_wire = eval(config['COLORS SET']['color_wire'])
-    context.scene.color_clay = eval(config['COLORS SET']['color_clay'])
+        if 'cb_clear_rlayers' in config['CHECKBOXES']:
+            context.scene.cwac.cb_clear_rlayers = eval(config['CHECKBOXES']['cb_clear_rlayers'])
 
-    context.scene.materials.wire = config['MATERIALS SET (NAMES)']['wire']
-    context.scene.materials.clay = config['MATERIALS SET (NAMES)']['clay']
+        if 'cb_clear_materials' in config['CHECKBOXES']:
+            context.scene.cwac.cb_clear_materials = eval(config['CHECKBOXES']['cb_clear_materials'])
 
-    context.scene.slider_wt_freestyle = eval(config['SLIDERS']['slider_wt_freestyle'])
-    context.scene.slider_wt_modifier = eval(config['SLIDERS']['slider_wt_modifier'])
+        if 'cb_composited' in config['CHECKBOXES']:
+            context.scene.cwac.cb_composited = eval(config['CHECKBOXES']['cb_composited'])
 
-    context.scene.layers_affected = eval(config['LAYERS SELECTED']['layers_affected'])
-    context.scene.layers_other = eval(config['LAYERS SELECTED']['layers_other'])
+        if 'cb_only_selected' in config['CHECKBOXES']:
+            context.scene.cwac.cb_only_selected = eval(config['CHECKBOXES']['cb_only_selected'])
 
-    context.scene.scene_name_1 = config['SCENE NAMES SET']['scene_name_1']
-    context.scene.scene_name_2 = config['SCENE NAMES SET']['scene_name_2']
+        if 'cb_ao' in config['CHECKBOXES']:
+            context.scene.cwac.cb_ao = eval(config['CHECKBOXES']['cb_ao'])
+
+        if 'cb_clay' in config['CHECKBOXES']:
+            context.scene.cwac.cb_clay = eval(config['CHECKBOXES']['cb_clay'])
+
+        if 'cb_clay_only' in config['CHECKBOXES']:
+            context.scene.cwac.cb_clay_only = eval(config['CHECKBOXES']['cb_clay_only'])
+
+        if 'cb_mat_wire' in config['CHECKBOXES']:
+            context.scene.cwac.cb_mat_wire = eval(config['CHECKBOXES']['cb_mat_wire'])
+
+        if 'cb_mat_clay' in config['CHECKBOXES']:
+            context.scene.cwac.cb_mat_clay = eval(config['CHECKBOXES']['cb_mat_clay'])
+
+    if 'COLORS SET' in config:
+        if 'color_wire' in config['COLORS SET']:
+            context.scene.cwac.color_wire = eval(config['COLORS SET']['color_wire'])
+
+        if 'color_clay' in config['COLORS SET']:
+            context.scene.cwac.color_clay = eval(config['COLORS SET']['color_clay'])
+
+    if 'MATERIALS SET' in config:
+        if 'wire' in config['MATERIALS SET']:
+            if config['MATERIALS SET']['wire'] in bpy.data.materials:
+                context.scene.cwac.material_wire = config['MATERIALS SET']['wire']
+
+        if 'clay' in config['MATERIALS SET']:
+            if config['MATERIALS SET']['clay'] in bpy.data.materials:
+                context.scene.cwac.material_clay = config['MATERIALS SET']['clay']
+
+    if 'SLIDERS' in config:
+        if 'slider_wt_freestyle' in config['SLIDERS']:
+            context.scene.cwac.slider_wt_freestyle = eval(config['SLIDERS']['slider_wt_freestyle'])
+
+        if 'slider_wt_modifier' in config['SLIDERS']:
+            context.scene.cwac.slider_wt_modifier = eval(config['SLIDERS']['slider_wt_modifier'])
+
+    if 'LAYERS SELECTED' in config:
+        if 'layers_affected' in config['LAYERS SELECTED']:
+            context.scene.cwac.layers_affected = eval(config['LAYERS SELECTED']['layers_affected'])
+
+        if 'layers_other' in config['LAYERS SELECTED']:
+            context.scene.cwac.layers_other = eval(config['LAYERS SELECTED']['layers_other'])
+
+    if 'SCENE NAMES SET' in config:
+        if 'scene_name_1' in config['SCENE NAMES SET']:
+            context.scene.cwac.scene_name_1 = config['SCENE NAMES SET']['scene_name_1']
+
+        if 'scene_name_2' in config['SCENE NAMES SET']:
+            context.scene.cwac.scene_name_2 = config['SCENE NAMES SET']['scene_name_2']
 
 
 def config_save(context, filepath):
@@ -209,33 +241,33 @@ def config_save(context, filepath):
 
     config = configparser.ConfigParser()
 
-    config['WIREFRAME TYPE'] = {'wireframe_method': context.scene.wireframe_method}
+    config['WIREFRAME TYPE'] = {'wireframe_method': context.scene.cwac.wireframe_method}
 
-    config['CHECKBOXES'] = {'cb_backup': context.scene.cb_backup,
-                            'cb_clear_rlayers': context.scene.cb_clear_rlayers,
-                            'cb_clear_materials': context.scene.cb_clear_materials,
-                            'cb_composited': context.scene.cb_composited,
-                            'cb_only_selected': context.scene.cb_only_selected,
-                            'cb_ao': context.scene.cb_ao,
-                            'cb_clay': context.scene.cb_clay,
-                            'cb_clay_only': context.scene.cb_clay_only,
-                            'cb_mat_wire': context.scene.cb_mat_wire,
-                            'cb_mat_clay': context.scene.cb_mat_clay}
+    config['CHECKBOXES'] = {'cb_backup': context.scene.cwac.cb_backup,
+                            'cb_clear_rlayers': context.scene.cwac.cb_clear_rlayers,
+                            'cb_clear_materials': context.scene.cwac.cb_clear_materials,
+                            'cb_composited': context.scene.cwac.cb_composited,
+                            'cb_only_selected': context.scene.cwac.cb_only_selected,
+                            'cb_ao': context.scene.cwac.cb_ao,
+                            'cb_clay': context.scene.cwac.cb_clay,
+                            'cb_clay_only': context.scene.cwac.cb_clay_only,
+                            'cb_mat_wire': context.scene.cwac.cb_mat_wire,
+                            'cb_mat_clay': context.scene.cwac.cb_mat_clay}
 
-    config['COLORS SET'] = {'color_wire': list(context.scene.color_wire),
-                            'color_clay': list(context.scene.color_clay)}
+    config['COLORS SET'] = {'color_wire': list(context.scene.cwac.color_wire),
+                            'color_clay': list(context.scene.cwac.color_clay)}
 
-    config['MATERIALS SET (NAMES)'] = {'wire': context.scene.materials.wire,
-                                       'clay': context.scene.materials.clay}
+    config['MATERIALS SET'] = {'wire': context.scene.cwac.material_wire,
+                               'clay': context.scene.cwac.material_clay}
 
-    config['SLIDERS'] = {'slider_wt_freestyle': context.scene.slider_wt_freestyle,
-                         'slider_wt_modifier': context.scene.slider_wt_modifier}
+    config['SLIDERS'] = {'slider_wt_freestyle': context.scene.cwac.slider_wt_freestyle,
+                         'slider_wt_modifier': context.scene.cwac.slider_wt_modifier}
 
-    config['LAYERS SELECTED'] = {'layers_affected': list(context.scene.layers_affected),
-                                 'layers_other': list(context.scene.layers_other)}
+    config['LAYERS SELECTED'] = {'layers_affected': list(context.scene.cwac.layers_affected),
+                                 'layers_other': list(context.scene.cwac.layers_other)}
 
-    config['SCENE NAMES SET'] = {'scene_name_1': context.scene.scene_name_1,
-                                 'scene_name_2': context.scene.scene_name_2}
+    config['SCENE NAMES SET'] = {'scene_name_1': context.scene.cwac.scene_name_1,
+                                 'scene_name_2': context.scene.cwac.scene_name_2}
 
     with open(filepath, 'w') as configfile:
         config.write(configfile)
@@ -246,29 +278,29 @@ def update_material_lists():
     items were not empty strings."""
     if len(w_var.mat_wire_name) > 0:
         if not (w_var.wireframe_method == 'WIREFRAME_BI' and w_var.cb_clay_only):
-            bpy.data.scenes[w_var.scene_name_1].materials.wire = w_var.mat_wire_name
+            bpy.data.scenes[w_var.scene_name_1].cwac.material_wire = w_var.mat_wire_name
 
             if w_var.wireframe_method == 'WIREFRAME_BI':
-                bpy.data.scenes[w_var.scene_name_2].materials.wire = w_var.mat_wire_name
+                bpy.data.scenes[w_var.scene_name_2].cwac.material_wire = w_var.mat_wire_name
 
             if w_var.cb_backup:
-                w_var.original_scene.materials.wire = w_var.mat_wire_name
+                w_var.original_scene.cwac.material_wire = w_var.mat_wire_name
 
         else:
-            bpy.data.scenes[w_var.scene_name_2].materials.wire = w_var.mat_wire_name
+            bpy.data.scenes[w_var.scene_name_2].cwac.material_wire = w_var.mat_wire_name
 
     if len(w_var.mat_clay_name) > 0:
         if not (w_var.wireframe_method == 'WIREFRAME_BI' and w_var.cb_clay_only):
-            bpy.data.scenes[w_var.scene_name_1].materials.clay = w_var.mat_clay_name
+            bpy.data.scenes[w_var.scene_name_1].cwac.material_clay = w_var.mat_clay_name
 
             if w_var.wireframe_method == 'WIREFRAME_BI':
-                bpy.data.scenes[w_var.scene_name_2].materials.clay = w_var.mat_clay_name
+                bpy.data.scenes[w_var.scene_name_2].cwac.material_clay = w_var.mat_clay_name
 
             if w_var.cb_backup:
-                w_var.original_scene.materials.clay = w_var.mat_clay_name
+                w_var.original_scene.cwac.material_clay = w_var.mat_clay_name
 
         else:
-            bpy.data.scenes[w_var.scene_name_2].materials.clay = w_var.mat_clay_name
+            bpy.data.scenes[w_var.scene_name_2].cwac.material_clay = w_var.mat_clay_name
 
 
 def set_up_wireframe_bi():
@@ -317,8 +349,8 @@ def set_up_wireframe_bi():
         # updates progress bar to 37 %
         bpy.context.window_manager.progress_update(38)
 
-        # sets up wireframe material on affected meshes
-        w_var.wire_bi_mat = wire_scene.add_wireframe_bi()
+        # sets up wireframe material on affected meshes and saves material name
+        wire_scene.get_scene().cwac.data_material_wire = wire_scene.add_wireframe_bi().name
 
         # sets render alpha mode to transparent, to be able to composite this wireframe on top of the clay later
         bpy.data.scenes[wire_scene.name].render.alpha_mode = 'TRANSPARENT'
@@ -368,9 +400,9 @@ def set_up_wireframe_bi():
 
     if w_var.cb_clay:
 
-        # adds clay material to affected meshes
+        # adds clay material to affected meshes and saves material name
         clay_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
-        w_var.clay_mat = clay_scene.add_clay_to_selected()
+        clay_scene.get_scene().cwac.data_material_clay = clay_scene.add_clay_to_selected().name
 
     # updates progress bar to 99 %
     bpy.context.window_manager.progress_update(99)
@@ -400,8 +432,9 @@ def set_up_wireframe_freestyle():
     if not w_var.cb_clay_only:
 
         # sets up renderlayer(s) (depending on 'Composited wireframing' checkbox) and freestyle wireframing
+        # also saves freestyle linestyle name
         wire_scene.set_up_rlayer('wireframe', rlname_other='other')
-        w_var.wire_freestyle_linestyle = wire_scene.add_wireframe_freestyle()
+        wire_scene.get_scene().cwac.data_freestyle_linestyle = wire_scene.add_wireframe_freestyle().name
 
     else:
         # sets up renderlayer named 'clay' instead of 'wireframe'
@@ -421,9 +454,9 @@ def set_up_wireframe_freestyle():
 
     if w_var.cb_clay:
 
-        # adds clay material to affected meshes
+        # adds clay material to affected meshes and saves material name
         wire_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
-        w_var.clay_mat = wire_scene.add_clay_to_selected()
+        wire_scene.get_scene().cwac.data_material_clay = wire_scene.add_clay_to_selected().name
 
     # updates progress bar to 99 %
     bpy.context.window_manager.progress_update(99)
@@ -475,19 +508,19 @@ def set_up_wireframe_modifier():
 
     if w_var.cb_clay:
 
-        # adds clay material to affected meshes
+        # adds clay material to affected meshes and saves material name
         # (need to add clay material before wireframe material for material offset in wireframe modifier to be correct)
         wire_scene.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
-        w_var.clay_mat = wire_scene.add_clay_to_selected()
+        wire_scene.get_scene().cwac.data_material_clay = wire_scene.add_clay_to_selected().name
 
     # updates progress bar to 75 %
     bpy.context.window_manager.progress_update(75)
 
     if not w_var.cb_clay_only:
 
-        # sets up renderlayer and adds wireframe modifier to affected meshes
+        # sets up renderlayer and adds wireframe modifier/material to affected meshes and saves wireframe material
         wire_scene.set_up_rlayer('wireframe')
-        w_var.wire_modifier_mat = wire_scene.add_wireframe_modifier()
+        wire_scene.get_scene().cwac.data_material_wire = wire_scene.add_wireframe_modifier().name
 
     else:
 

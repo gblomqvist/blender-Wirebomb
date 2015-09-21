@@ -26,8 +26,8 @@ class BlenderSceneW(BlenderScene):
 
         if backup_scene:
 
-            # saves created scene
-            w_var.created_scenes.add(bpy.data.scenes[self.name])
+            # saves created scene in collection property for 'Quick Remove' operator
+            bpy.context.scene.cwac.data_scenes_created.add().name = self.name
 
     def select(self, mode, types=None, types_excluded=None, layers=None, layers_excluded=None,
                objects=None, objects_excluded=None):
@@ -101,12 +101,12 @@ class BlenderSceneW(BlenderScene):
         elif mode == 'SELECT':
             if objects is not None:
                 for obj in scene.objects:
-                    if ((obj in objects or 'ALL' in objects)
-                            and obj.type in types and self.object_on_layer(obj, layers)):
+                    if ((obj in objects or 'ALL' in objects) and
+                            obj.type in types and self.object_on_layer(obj, layers)):
                         obj.select = True
 
-                    elif (obj in objects_excluded or 'ELSE' in objects_excluded
-                            or obj.type in types_excluded or self.object_on_layer(obj, layers_excluded)):
+                    elif (obj in objects_excluded or 'ELSE' in objects_excluded or
+                          obj.type in types_excluded or self.object_on_layer(obj, layers_excluded)):
                         obj.select = False
 
             else:
@@ -120,8 +120,8 @@ class BlenderSceneW(BlenderScene):
         elif mode == 'DESELECT':
             if objects is not None:
                 for obj in scene.objects:
-                    if ((obj in objects or 'ALL' in objects)
-                            and obj.type in types and self.object_on_layer(obj, layers)):
+                    if ((obj in objects or 'ALL' in objects) and
+                            obj.type in types and self.object_on_layer(obj, layers)):
                         obj.select = False
 
             else:
@@ -176,11 +176,8 @@ class BlenderSceneW(BlenderScene):
 
             new_rlayer = scene.render.layers.active
 
-        # if not clearing render layers: deactivates them and creates new one
+        # if not clearing render layers: creates new one
         else:
-            for rlayer in scene.render.layers:
-                rlayer.use = False
-
             new_rlayer = scene.render.layers.new(rlname)
             scene.render.layers.active = new_rlayer
 
@@ -310,15 +307,15 @@ class BlenderSceneW(BlenderScene):
         links.new(node_rlwire.outputs[0], node_alphaover.inputs[2])
 
         if w_var.cb_ao:
-            node_colormix = tree.nodes.new('CompositorNodeMixRGB')
-            node_colormix.location = 100, 140
-            node_colormix.blend_type = 'MULTIPLY'
-            node_colormix.inputs[0].default_value = 0.73
+            node_mixcolor = tree.nodes.new('CompositorNodeMixRGB')
+            node_mixcolor.location = 100, 140
+            node_mixcolor.blend_type = 'MULTIPLY'
+            node_mixcolor.inputs[0].default_value = 0.73
 
-            links.new(node_alphaover.outputs[0], node_colormix.inputs[1])
-            links.new(node_rlclay.outputs[10], node_colormix.inputs[2])
-            links.new(node_colormix.outputs[0], node_comp.inputs[0])
-            links.new(node_colormix.outputs[0], node_viewer.inputs[0])
+            links.new(node_alphaover.outputs[0], node_mixcolor.inputs[1])
+            links.new(node_rlclay.outputs[10], node_mixcolor.inputs[2])
+            links.new(node_mixcolor.outputs[0], node_comp.inputs[0])
+            links.new(node_mixcolor.outputs[0], node_viewer.inputs[0])
 
         else:
             links.new(node_alphaover.outputs[0], node_comp.inputs[0])
@@ -361,26 +358,26 @@ class BlenderSceneW(BlenderScene):
         links.new(node_rlclay.outputs[0], node_alphaover.inputs[2])
 
         if w_var.cb_ao:
-            node_colormix_wire = tree.nodes.new('CompositorNodeMixRGB')
-            node_colormix_wire.location = -125, 150
-            node_colormix_wire.blend_type = 'MULTIPLY'
-            node_colormix_wire.inputs[0].default_value = 0.730
+            node_mixcolor_wire = tree.nodes.new('CompositorNodeMixRGB')
+            node_mixcolor_wire.location = -125, 150
+            node_mixcolor_wire.blend_type = 'MULTIPLY'
+            node_mixcolor_wire.inputs[0].default_value = 0.730
 
-            node_colormix_clay = tree.nodes.new('CompositorNodeMixRGB')
-            node_colormix_clay.location = -125, -100
-            node_colormix_clay.blend_type = 'MULTIPLY'
-            node_colormix_clay.inputs[0].default_value = 0.730
+            node_mixcolor_clay = tree.nodes.new('CompositorNodeMixRGB')
+            node_mixcolor_clay.location = -125, -100
+            node_mixcolor_clay.blend_type = 'MULTIPLY'
+            node_mixcolor_clay.inputs[0].default_value = 0.730
 
             node_alphaover.location = 125, 75
 
-            links.new(node_rlwire.outputs[0], node_colormix_wire.inputs[1])
-            links.new(node_rlwire.outputs[10], node_colormix_wire.inputs[2])
+            links.new(node_rlwire.outputs[0], node_mixcolor_wire.inputs[1])
+            links.new(node_rlwire.outputs[10], node_mixcolor_wire.inputs[2])
 
-            links.new(node_rlclay.outputs[0], node_colormix_clay.inputs[1])
-            links.new(node_rlclay.outputs[10], node_colormix_clay.inputs[2])
+            links.new(node_rlclay.outputs[0], node_mixcolor_clay.inputs[1])
+            links.new(node_rlclay.outputs[10], node_mixcolor_clay.inputs[2])
 
-            links.new(node_colormix_wire.outputs[0], node_alphaover.inputs[1])
-            links.new(node_colormix_clay.outputs[0], node_alphaover.inputs[2])
+            links.new(node_mixcolor_wire.outputs[0], node_alphaover.inputs[1])
+            links.new(node_mixcolor_clay.outputs[0], node_alphaover.inputs[2])
 
             links.new(node_alphaover.outputs[0], node_comp.inputs[0])
             links.new(node_alphaover.outputs[0], node_viewer.inputs[0])
@@ -401,15 +398,15 @@ class BlenderSceneW(BlenderScene):
         tree.nodes.clear()
 
         # creating the nodes
-        node_colormix = tree.nodes.new('CompositorNodeMixRGB')
-        node_colormix.location = 0, 60
-        node_colormix.blend_type = 'MULTIPLY'
-        node_colormix.inputs[0].default_value = 0.730
-
         node_rlayer = tree.nodes.new('CompositorNodeRLayers')
         node_rlayer.location = -300, 100
         node_rlayer.scene = scene
         node_rlayer.layer = w_var.rlname
+
+        node_mixcolor = tree.nodes.new('CompositorNodeMixRGB')
+        node_mixcolor.location = 0, 50
+        node_mixcolor.blend_type = 'MULTIPLY'
+        node_mixcolor.inputs[0].default_value = 0.730
 
         node_comp = tree.nodes.new('CompositorNodeComposite')
         node_comp.location = 300, 130
@@ -419,10 +416,10 @@ class BlenderSceneW(BlenderScene):
 
         # connecting the nodes
         links = tree.links
-        links.new(node_rlayer.outputs[0], node_colormix.inputs[1])
-        links.new(node_rlayer.outputs[10], node_colormix.inputs[2])
-        links.new(node_colormix.outputs[0], node_comp.inputs[0])
-        links.new(node_colormix.outputs[0], node_viewer.inputs[0])
+        links.new(node_rlayer.outputs[0], node_mixcolor.inputs[1])
+        links.new(node_rlayer.outputs[10], node_mixcolor.inputs[2])
+        links.new(node_mixcolor.outputs[0], node_comp.inputs[0])
+        links.new(node_mixcolor.outputs[0], node_viewer.inputs[0])
 
         for node in tree.nodes:
             node.select = False
@@ -445,7 +442,7 @@ class BlenderSceneW(BlenderScene):
 
             # separating rgb and alpha
             clay_color_rgb = clay_color[0:3]
-
+            clay_color_alpha = clay_color[-1]
             clay_mat = bpy.data.materials.new('clay')
             clay_mat.use_nodes = True
             tree = clay_mat.node_tree
@@ -454,25 +451,43 @@ class BlenderSceneW(BlenderScene):
             # creating the nodes
             node_diffuse = tree.nodes.new('ShaderNodeBsdfDiffuse')
             node_diffuse.location = -150, 50
-            node_diffuse.inputs['Color'].default_value = clay_color
-            node_diffuse.inputs['Roughness'].default_value = 0.05
+            node_diffuse.inputs[0].default_value = clay_color_rgb + (1.0, )
+            node_diffuse.inputs[1].default_value = 0.05
             node_diffuse.color = clay_color_rgb
 
-            # setting unique ID for use in real-time change
-            node_diffuse.name = 'clay@addon'
-            w_var.node_clay_diffuse = node_diffuse.name
+            # referencing to this ID in the real-time change
+            node_diffuse.name = 'addon_clay'
 
             node_output = tree.nodes.new('ShaderNodeOutputMaterial')
             node_output.location = 150, 50
 
-            # sets the viewport color
-            clay_mat.diffuse_color = clay_color_rgb
+            if clay_color_alpha != 1.0:
+                node_diffuse.location = -300, 100
+                node_output.location = 300, 50
 
-            # connecting the nodes.
-            tree.links.new(node_diffuse.outputs[0], node_output.inputs[0])
+                node_transparent = tree.nodes.new('ShaderNodeBsdfTransparent')
+                node_transparent.location = -300, -100
+
+                node_mixshader = tree.nodes.new('ShaderNodeMixShader')
+                node_mixshader.location = 0, 50
+                node_mixshader.inputs[0].default_value = 1.0 - clay_color_alpha
+
+                # connecting the nodes
+                tree.links.new(node_diffuse.outputs[0], node_mixshader.inputs[1])
+                tree.links.new(node_transparent.outputs[0], node_mixshader.inputs[2])
+                tree.links.new(node_transparent.outputs[0], node_mixshader.inputs[2])
+                tree.links.new(node_mixshader.outputs[0], node_output.inputs[0])
+
+            else:
+
+                # connecting the nodes
+                tree.links.new(node_diffuse.outputs[0], node_output.inputs[0])
 
             for node in tree.nodes:
                 node.select = False
+
+            # sets the viewport color
+            clay_mat.diffuse_color = clay_color_rgb
 
         previous_area = bpy.context.area.type
         bpy.context.area.type = 'VIEW_3D'
@@ -557,6 +572,7 @@ class BlenderSceneW(BlenderScene):
 
             # separating rgb and alpha
             wireframe_color_rgb = wire_color[0:3]
+            wireframe_color_alpha = wire_color[-1]
 
             wireframe_mat = bpy.data.materials.new('wireframe')
             wireframe_mat.use_nodes = True
@@ -566,25 +582,43 @@ class BlenderSceneW(BlenderScene):
             # creating the nodes
             node_diffuse = tree.nodes.new('ShaderNodeBsdfDiffuse')
             node_diffuse.location = -150, 50
-            node_diffuse.inputs['Color'].default_value = wire_color
-            node_diffuse.inputs['Roughness'].default_value = 0.05
+            node_diffuse.inputs[0].default_value = wireframe_color_rgb + (1.0,)
+            node_diffuse.inputs[1].default_value = 0.05
             node_diffuse.color = wireframe_color_rgb
 
-            # setting unique ID for use in real-time change
-            node_diffuse.name = 'wireframe@addon'
-            w_var.node_wireframe_diffuse = node_diffuse.name
+            # referencing to this ID in the real-time change
+            node_diffuse.name = 'addon_wireframe'
 
             node_output = tree.nodes.new('ShaderNodeOutputMaterial')
             node_output.location = 150, 50
 
-            # sets the viewport color
-            wireframe_mat.diffuse_color = wireframe_color_rgb
+            if wireframe_color_alpha != 1.0:
+                node_diffuse.location = -300, 100
+                node_output.location = 300, 50
 
-            # connecting the nodes.
-            tree.links.new(node_diffuse.outputs[0], node_output.inputs[0])
+                node_transparent = tree.nodes.new('ShaderNodeBsdfTransparent')
+                node_transparent.location = -300, -100
+
+                node_mixshader = tree.nodes.new('ShaderNodeMixShader')
+                node_mixshader.location = 0, 50
+                node_mixshader.inputs[0].default_value = 1.0 - wireframe_color_alpha
+
+                # connecting the nodes
+                tree.links.new(node_diffuse.outputs[0], node_mixshader.inputs[1])
+                tree.links.new(node_transparent.outputs[0], node_mixshader.inputs[2])
+                tree.links.new(node_transparent.outputs[0], node_mixshader.inputs[2])
+                tree.links.new(node_mixshader.outputs[0], node_output.inputs[0])
+
+            else:
+
+                # connecting the nodes
+                tree.links.new(node_diffuse.outputs[0], node_output.inputs[0])
 
             for node in tree.nodes:
                 node.select = False
+
+            # sets the viewport color
+            wireframe_mat.diffuse_color = wireframe_color_rgb
 
         # if object has no materials, fillout_mat is used so that the wireframe and clay materials are different
         fillout_mat = bpy.data.materials.new('fillout')
@@ -602,9 +636,8 @@ class BlenderSceneW(BlenderScene):
                 modifier_wireframe.material_offset = 1
                 modifier_wireframe.thickness = w_var.slider_wt_modifier
 
-                # setting unique ID for use in real-time change
-                modifier_wireframe.name = 'wires'
-                w_var.modifier_wireframe = modifier_wireframe.name
+                # referencing to this ID in the real-time change
+                modifier_wireframe.name = 'addon_wireframe'
 
         return wireframe_mat
 
@@ -674,23 +707,50 @@ class BlenderSceneW(BlenderScene):
         """Adds all used objects to three sets in w_var variables: affected objects, other objects and all used objects.
         """
         scene = self.set_as_active()
+        scene.cwac.data_objects_affected.clear()
+        scene.cwac.data_objects_other.clear()
+        scene.cwac.data_objects_all.clear()
 
         if w_var.cb_only_selected:
             for obj in scene.objects:
                 if obj.select:
+
+                    # adding objects to blender session-temporary sets
                     w_var.objects_affected.add(obj)
                     w_var.objects_all_used.add(obj)
 
+                    # adding object names to "permanent" collection properties
+                    scene.cwac.data_objects_affected.add().name = obj.name
+                    scene.cwac.data_objects_all.add().name = obj.name
+
                 elif self.object_on_layer(obj, w_var.layer_numbers_other):
+
+                    # adding objects to blender session-temporary sets
                     w_var.objects_other.add(obj)
                     w_var.objects_all_used.add(obj)
+
+                    # adding object names to "permanent" collection properties
+                    scene.cwac.data_objects_other.add().name = obj.name
+                    scene.cwac.data_objects_all.add().name = obj.name
 
         else:
             for obj in scene.objects:
                 if self.object_on_layer(obj, w_var.layer_numbers_affected):
+
+                    # adding objects to blender session-temporary sets
                     w_var.objects_affected.add(obj)
                     w_var.objects_all_used.add(obj)
 
+                    # adding object names to "permanent" collection properties
+                    scene.cwac.data_objects_affected.add().name = obj.name
+                    scene.cwac.data_objects_all.add().name = obj.name
+
                 elif self.object_on_layer(obj, w_var.layer_numbers_other):
+
+                    # adding objects to blender session-temporary sets
                     w_var.objects_other.add(obj)
                     w_var.objects_all_used.add(obj)
+
+                    # adding objects' names to "permanent" collection properties
+                    scene.cwac.data_objects_other.add().name = obj.name
+                    scene.cwac.data_objects_all.add().name = obj.name

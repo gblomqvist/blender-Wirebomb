@@ -11,16 +11,8 @@ cb_clay_only_active = None
 cb_mat_wire_active = None
 cb_mat_clay_active = None
 
-# all scenes created via this add-on during this blender session (for 'Quick remove' operator)
-created_scenes = set()
-
 # the scene to set up for a wireframe/clay render
 original_scene = None
-
-# setting unique IDs for use in real-time color change and wireframe modifier thickness change
-node_wireframe_diffuse = ''
-node_clay_diffuse = ''
-modifier_wireframe = ''
 
 # render layer names
 rlname = ''
@@ -31,12 +23,6 @@ rlname_other = ''
 objects_affected = set()
 objects_other = set()
 objects_all_used = set()
-
-# materials
-wire_freestyle_linestyle = None
-wire_modifier_mat = None
-wire_bi_mat = None
-clay_mat = None
 
 # from interface:
 # wireframe type

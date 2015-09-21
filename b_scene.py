@@ -68,8 +68,12 @@ class BlenderScene:
 
         return new_name
 
+    def get_scene(self):
+        """Returns the blender scene object linked to this instance."""
+        return bpy.data.scenes[self.name]
+
     def get_original_scene(self):
-        """Returns the original blender scene of this instance."""
+        """Returns the original blender scene object of this instance."""
         return self.original_scene
 
     def set_as_active(self):
@@ -78,10 +82,9 @@ class BlenderScene:
         Returns:
             The scene object.
         """
-        current_scene = bpy.data.scenes[self.name]
-        bpy.context.screen.scene = current_scene
+        bpy.context.screen.scene = self.get_scene()
 
-        return current_scene
+        return self.get_scene()
 
     def set_active_object(self, obj_types=constants.obj_types):
         """Sets the active object to be one among the selected objects.
@@ -211,12 +214,12 @@ class BlenderScene:
         elif mode == 'SELECT':
             if objects is not None:
                 for obj in scene.objects:
-                    if ((obj in objects or 'ALL' in objects)
-                            and obj.type in types and self.object_on_layer(obj, layers)):
+                    if ((obj in objects or 'ALL' in objects) and
+                            obj.type in types and self.object_on_layer(obj, layers)):
                         obj.select = True
 
-                    elif (obj in objects_excluded or 'ELSE' in objects_excluded
-                            or obj.type in types_excluded or self.object_on_layer(obj, layers_excluded)):
+                    elif (obj in objects_excluded or 'ELSE' in objects_excluded or
+                          obj.type in types_excluded or self.object_on_layer(obj, layers_excluded)):
                         obj.select = False
 
             else:
@@ -230,8 +233,8 @@ class BlenderScene:
         elif mode == 'DESELECT':
             if objects is not None:
                 for obj in scene.objects:
-                    if ((obj in objects or 'ALL' in objects)
-                            and obj.type in types and self.object_on_layer(obj, layers)):
+                    if ((obj in objects or 'ALL' in objects) and
+                            obj.type in types and self.object_on_layer(obj, layers)):
                         obj.select = False
 
             else:

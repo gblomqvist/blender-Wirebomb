@@ -9,7 +9,7 @@ from . import w_var
 class WireframeOperator(bpy.types.Operator):
     """Set up wireframe/clay render"""
     bl_label = "Wireframe"
-    bl_idname = 'scene.wireframe_and_clay_set_up_new'
+    bl_idname = 'scene.cwac_set_up_new'
 
     def __init__(self):
         self.start = time.time()
@@ -57,20 +57,24 @@ class WireframeOperator(bpy.types.Operator):
 
 
 class QuickRemoveOperator(bpy.types.Operator):
-    """Removes all scenes created via this add-on during this blender session"""
+    """Removes all scenes created through this add-on from this scene"""
     bl_label = "Quick remove"
-    bl_idname = 'scene.wireframe_and_clay_quick_remove'
+    bl_idname = 'scene.cwac_quick_remove'
 
     def __init__(self):
         self.start = time.time()
 
     def execute(self, context):
 
-        # iterates over copy because original is being changed
-        for scene in list(w_var.created_scenes):
-            if scene.name in bpy.data.scenes:
-                bpy.data.scenes.remove(scene)
-                w_var.created_scenes.remove(scene)
+        scenes_created = context.scene.cwac.data_scenes_created
+
+        # removes scenes from blender
+        for col_scene in scenes_created:
+            if col_scene.name in bpy.data.scenes:
+                bpy.data.scenes.remove(bpy.data.scenes[col_scene.name])
+
+        # removes scenes from collection property
+        scenes_created.clear()
 
         self.report({'INFO'}, "Remove done in {} seconds!".format(round(time.time() - self.start, 2)))
         return {'FINISHED'}
@@ -79,7 +83,7 @@ class QuickRemoveOperator(bpy.types.Operator):
 class ConfigSaveOperator(bpy.types.Operator):
     """Saves a config INI file"""
     bl_label = "Save INI file"
-    bl_idname = 'scene.wireframe_and_clay_config_save'
+    bl_idname = 'scene.cwac_config_save'
 
     filepath = bpy.props.StringProperty()
     filename = bpy.props.StringProperty()
@@ -102,7 +106,7 @@ class ConfigSaveOperator(bpy.types.Operator):
 class ConfigLoadOperator(bpy.types.Operator):
     """Loads a config INI file"""
     bl_label = "Load INI file"
-    bl_idname = 'scene.wireframe_and_clay_config_load'
+    bl_idname = 'scene.cwac_config_load'
 
     filepath = bpy.props.StringProperty()
     filename = bpy.props.StringProperty()
@@ -129,11 +133,11 @@ class ConfigLoadOperator(bpy.types.Operator):
 class SelectLayersAffectedOperator(bpy.types.Operator):
     """Selects all layers"""
     bl_label = "Select all layers affected"
-    bl_idname = 'scene.wireframe_and_clay_select_layers_affected'
+    bl_idname = 'scene.cwac_select_layers_affected'
 
     def execute(self, context):
         for i in range(0, 20):
-            bpy.context.scene.layers_affected[i] = True
+            context.scene.cwac.layers_affected[i] = True
 
         return {'FINISHED'}
 
@@ -141,11 +145,11 @@ class SelectLayersAffectedOperator(bpy.types.Operator):
 class SelectLayersOtherOperator(bpy.types.Operator):
     """Selects all layers"""
     bl_label = "Select all other layers"
-    bl_idname = 'scene.wireframe_and_clay_select_layers_other'
+    bl_idname = 'scene.cwac_select_layers_other'
 
     def execute(self, context):
         for i in range(0, 20):
-            bpy.context.scene.layers_other[i] = True
+            context.scene.cwac.layers_other[i] = True
 
         return {'FINISHED'}
 
@@ -153,11 +157,11 @@ class SelectLayersOtherOperator(bpy.types.Operator):
 class DeselectLayersAffectedOperator(bpy.types.Operator):
     """Deselects all layers"""
     bl_label = "Deselect all layers affected"
-    bl_idname = 'scene.wireframe_and_clay_deselect_layers_affected'
+    bl_idname = 'scene.cwac_deselect_layers_affected'
 
     def execute(self, context):
         for i in range(0, 20):
-            bpy.context.scene.layers_affected[i] = False
+            context.scene.cwac.layers_affected[i] = False
 
         return {'FINISHED'}
 
@@ -165,10 +169,10 @@ class DeselectLayersAffectedOperator(bpy.types.Operator):
 class DeselectLayersOtherOperator(bpy.types.Operator):
     """Deselects all layers"""
     bl_label = "Deselect all other layers"
-    bl_idname = 'scene.wireframe_and_clay_deselect_layers_other'
+    bl_idname = 'scene.cwac_deselect_layers_other'
 
     def execute(self, context):
         for i in range(0, 20):
-            bpy.context.scene.layers_other[i] = False
+            context.scene.cwac.layers_other[i] = False
 
         return {'FINISHED'}
