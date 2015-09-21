@@ -129,8 +129,7 @@ class CWaC(bpy.types.PropertyGroup):
     # drop-down list with different wireframe methods
     wireframe_method = bpy.props.EnumProperty(
         items=[('WIREFRAME_MODIFIER', 'Modifier', 'Create wireframe using cycles and the wireframe modifier'),
-               ('WIREFRAME_FREESTYLE', 'Freestyle', 'Create wireframe using cycles freestyle renderer'),
-               ('WIREFRAME_BI', 'Blender Internal', 'Create wireframe using blender\'s internal renderer')],
+               ('WIREFRAME_FREESTYLE', 'Freestyle', 'Create wireframe using cycles freestyle renderer')],
         name='Method',
         description='Wireframe method',
         default='WIREFRAME_FREESTYLE',
