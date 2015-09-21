@@ -1,8 +1,6 @@
 # <pep8-80 compliant>
 
 error_101 = False  # no mesh selected
-error_201 = False  # no clay material selected
-error_202 = False  # no clay material selected
 error_301 = False  # no wire scene name
 error_302 = False  # no clay scene name
 
@@ -36,7 +34,6 @@ cb_only_selected = None
 cb_ao = None
 cb_clay = None
 cb_clay_only = None
-
 cb_mat_wire = None
 cb_mat_clay = None
 

@@ -129,15 +129,9 @@ def error_check(context):
         error_msg += '- No wire material selected!\n'
         success = False
 
-        # used for row alert in __init__.py
-        w_var.error_201 = True
-
     if w_var.cb_mat_clay and w_var.mat_clay_name == '':
         error_msg += '- No clay material selected! Maybe there\'s no materials in this .blend file?\n'
         success = False
-
-        # used for row alert in __init__.py
-        w_var.error_202 = True
 
     if len(w_var.scene_name_1) == 0:
         error_msg += '- No wire/clay scene name!\n'
