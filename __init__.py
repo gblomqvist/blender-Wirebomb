@@ -148,13 +148,13 @@ class CWaC(bpy.types.PropertyGroup):
                                                min=0,
                                                max=1,
                                                size=4,
-                                               default=(0.206003, 0.743, 0, 0.8),
+                                               default=(1.0, 1.0, 1.0, 0.6),
                                                update=update_color_wire,
                                                description="Wireframe color (changes real-time)")
     color_clay = bpy.props.FloatVectorProperty(subtype='COLOR',
                                                min=0, max=1,
                                                size=4,
-                                               default=(0.00798014, 0.0404641, 0.00610508, 1),
+                                               default=(0.087876, 0.138719, 0.189033, 1.0),
                                                update=update_color_clay,
                                                description="Clay color (changes real-time)")
 

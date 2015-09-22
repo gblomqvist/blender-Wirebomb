@@ -184,8 +184,8 @@ def config_load(context, filepath):
             context.scene.cwac.cb_mat_clay = eval(config['CHECKBOXES']['cb_mat_clay'])
 
     if 'COLORS SET' in config:
-        if 'color_wire' in config['COLORS SET']:
-            context.scene.cwac.color_wire = eval(config['COLORS SET']['color_wire'])
+        if 'color_wireframe' in config['COLORS SET']:
+            context.scene.cwac.color_wire = eval(config['COLORS SET']['color_wireframe'])
 
         if 'color_clay' in config['COLORS SET']:
             context.scene.cwac.color_clay = eval(config['COLORS SET']['color_clay'])
@@ -236,7 +236,7 @@ def config_save(context, filepath):
                             'cb_mat_wire': context.scene.cwac.cb_mat_wire,
                             'cb_mat_clay': context.scene.cwac.cb_mat_clay}
 
-    config['COLORS SET'] = {'color_wire': list(context.scene.cwac.color_wire),
+    config['COLORS SET'] = {'color_wireframe': list(context.scene.cwac.color_wire),
                             'color_clay': list(context.scene.cwac.color_clay)}
 
     config['MATERIALS SET'] = {'wireframe': context.scene.cwac.material_wire,
