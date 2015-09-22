@@ -174,7 +174,7 @@ class CWaC(bpy.types.PropertyGroup):
                                                             "included as is, e.g. lights")
 
     # sliders for the wireframe thickness
-    slider_wt_freestyle = bpy.props.FloatProperty(name='Wire Thickness',
+    slider_wt_freestyle = bpy.props.FloatProperty(name='Wireframe Thickness',
                                                   subtype='FACTOR',
                                                   precision=3,
                                                   soft_min=0.1,
@@ -183,7 +183,7 @@ class CWaC(bpy.types.PropertyGroup):
                                                   update=update_wire_thickness,
                                                   description="Wireframe thickness "
                                                               "(changes real-time)")
-    slider_wt_modifier = bpy.props.FloatProperty(name='Wire Thickness',
+    slider_wt_modifier = bpy.props.FloatProperty(name='Wireframe Thickness',
                                                  subtype='FACTOR',
                                                  precision=4,
                                                  soft_min=0.001,
@@ -297,7 +297,7 @@ class WireframePanel(bpy.types.Panel):
                 (scene.get_scene().cwac.cb_clay_only and w_var.cb_clay_only_active)):
             row.active = False
 
-        row.prop(context.scene.cwac, property='color_wire', text='Wire color')
+        row.prop(context.scene.cwac, property='color_wire', text='Wireframe color')
 
         if scene.get_scene().cwac.wireframe_method != 'WIREFRAME_FREESTYLE':
 
@@ -367,7 +367,7 @@ class WireframePanel(bpy.types.Panel):
         # wire thickness
         layout.separator()
         row = layout.row()
-        row.label('Wire thickness:')
+        row.label('Wireframe thickness:')
 
         if scene.get_scene().cwac.wireframe_method == 'WIREFRAME_FREESTYLE':
             row.prop(context.scene.cwac, property='slider_wt_freestyle', text='Thickness')

@@ -126,15 +126,15 @@ def error_check(context):
         success = False
 
     if w_var.cb_mat_wire and w_var.mat_wire_name == '':
-        error_msg += '- No wire material selected!\n'
+        error_msg += '- No wireframe material selected!\n'
         success = False
 
     if w_var.cb_mat_clay and w_var.mat_clay_name == '':
-        error_msg += '- No clay material selected! Maybe there\'s no materials in this .blend file?\n'
+        error_msg += '- No clay material selected!\n'
         success = False
 
     if len(w_var.scene_name_1) == 0:
-        error_msg += '- No wire/clay scene name!\n'
+        error_msg += '- No wireframe/clay scene name!\n'
         success = False
 
         # used for row alert in __init__.py
@@ -191,9 +191,9 @@ def config_load(context, filepath):
             context.scene.cwac.color_clay = eval(config['COLORS SET']['color_clay'])
 
     if 'MATERIALS SET' in config:
-        if 'wire' in config['MATERIALS SET']:
-            if config['MATERIALS SET']['wire'] in bpy.data.materials:
-                context.scene.cwac.material_wire = config['MATERIALS SET']['wire']
+        if 'wireframe' in config['MATERIALS SET']:
+            if config['MATERIALS SET']['wireframe'] in bpy.data.materials:
+                context.scene.cwac.material_wire = config['MATERIALS SET']['wireframe']
 
         if 'clay' in config['MATERIALS SET']:
             if config['MATERIALS SET']['clay'] in bpy.data.materials:
@@ -239,7 +239,7 @@ def config_save(context, filepath):
     config['COLORS SET'] = {'color_wire': list(context.scene.cwac.color_wire),
                             'color_clay': list(context.scene.cwac.color_clay)}
 
-    config['MATERIALS SET'] = {'wire': context.scene.cwac.material_wire,
+    config['MATERIALS SET'] = {'wireframe': context.scene.cwac.material_wire,
                                'clay': context.scene.cwac.material_clay}
 
     config['SLIDERS'] = {'slider_wt_freestyle': context.scene.cwac.slider_wt_freestyle,
