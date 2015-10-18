@@ -59,16 +59,21 @@ if __name__ == '__main__':
 
 def update_color_wire(self, context):
     """Updates the wireframe material's color."""
-    if context.scene.cwac.data_freestyle_linestyle in bpy.data.linestyles:
-        linestyle = bpy.data.linestyles[context.scene.cwac.data_freestyle_linestyle]
-        linestyle.color = context.scene.cwac.color_wire[0:3]
-        linestyle.alpha = context.scene.cwac.color_wire[-1]
+    if context.scene.cwac.wireframe_method == 'WIREFRAME_FREESTYLE':
+        if context.scene.cwac.data_freestyle_linestyle in bpy.data.linestyles:
+            linestyle = bpy.data.linestyles[context.scene.cwac.data_freestyle_linestyle]
+            linestyle.color = context.scene.cwac.color_wire[0:3]
+            linestyle.alpha = context.scene.cwac.color_wire[-1]
 
     elif context.scene.cwac.wireframe_method == 'WIREFRAME_MODIFIER':
         if context.scene.cwac.data_material_wire in bpy.data.materials:
             material = bpy.data.materials[context.scene.cwac.data_material_wire]
-            node = material.node_tree.nodes['addon_wireframe']
-            node.inputs[0].default_value = context.scene.cwac.color_wire
+
+            node_color = material.node_tree.nodes['addon_wireframe_color']
+            node_color.inputs[0].default_value = context.scene.cwac.color_wire[0:3] + (1.0,)
+
+            node_mix = material.node_tree.nodes['addon_wireframe_alpha']
+            node_mix.inputs[0].default_value = context.scene.cwac.color_wire[-1]
 
             # updating viewport color
             material.diffuse_color = context.scene.cwac.color_wire[0:3]
@@ -78,8 +83,12 @@ def update_color_clay(self, context):
     """Updates the clay material's color."""
     if context.scene.cwac.data_material_clay in bpy.data.materials:
         material = bpy.data.materials[context.scene.cwac.data_material_clay]
-        node = material.node_tree.nodes['addon_clay']
-        node.inputs[0].default_value = context.scene.cwac.color_clay[0:3] + (1.0, )
+
+        node_color = material.node_tree.nodes['addon_clay_color']
+        node_color.inputs[0].default_value = context.scene.cwac.color_clay[0:3] + (1.0, )
+
+        node_mix = material.node_tree.nodes['addon_clay_alpha']
+        node_mix.inputs[0].default_value = context.scene.cwac.color_clay[-1]
 
         # updating viewport color
         material.diffuse_color = context.scene.cwac.color_clay[0:3]
@@ -87,9 +96,10 @@ def update_color_clay(self, context):
 
 def update_wire_thickness(self, context):
     """Updates the wireframe's thickness."""
-    if context.scene.cwac.data_freestyle_linestyle in bpy.data.linestyles:
-        linestyle = bpy.data.linestyles[context.scene.cwac.data_freestyle_linestyle]
-        linestyle.thickness = context.scene.cwac.slider_wt_freestyle
+    if context.scene.cwac.wireframe_method == 'WIREFRAME_FREESTYLE':
+        if context.scene.cwac.data_freestyle_linestyle in bpy.data.linestyles:
+            linestyle = bpy.data.linestyles[context.scene.cwac.data_freestyle_linestyle]
+            linestyle.thickness = context.scene.cwac.slider_wt_freestyle
 
     elif context.scene.cwac.wireframe_method == 'WIREFRAME_MODIFIER':
         for col_obj in context.scene.cwac.data_objects_affected:
@@ -148,7 +158,7 @@ class CWaC(bpy.types.PropertyGroup):
                                                min=0,
                                                max=1,
                                                size=4,
-                                               default=(1.0, 1.0, 1.0, 0.6),
+                                               default=(1.0, 1.0, 1.0, 0.8),
                                                update=update_color_wire,
                                                description="Wireframe color (changes real-time)")
     color_clay = bpy.props.FloatVectorProperty(subtype='COLOR',

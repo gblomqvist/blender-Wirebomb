@@ -347,39 +347,31 @@ class BlenderSceneW(BlenderScene):
             tree.nodes.clear()
 
             # creating the nodes
+            node_transparent = tree.nodes.new('ShaderNodeBsdfTransparent')
+            node_transparent.location = -300, 100
+
             node_diffuse = tree.nodes.new('ShaderNodeBsdfDiffuse')
-            node_diffuse.location = -150, 50
+            node_diffuse.location = -300, -100
             node_diffuse.inputs[0].default_value = clay_color_rgb + (1.0, )
-            node_diffuse.inputs[1].default_value = 0.05
             node_diffuse.color = clay_color_rgb
 
             # referencing to this ID in the real-time change
-            node_diffuse.name = 'addon_clay'
+            node_diffuse.name = 'addon_clay_color'
+
+            node_mixshader = tree.nodes.new('ShaderNodeMixShader')
+            node_mixshader.location = 0, 50
+            node_mixshader.inputs[0].default_value = clay_color_alpha
+
+            # referencing to this ID in the real-time change
+            node_mixshader.name = 'addon_clay_alpha'
 
             node_output = tree.nodes.new('ShaderNodeOutputMaterial')
-            node_output.location = 150, 50
+            node_output.location = 300, 50
 
-            if clay_color_alpha != 1.0:
-                node_diffuse.location = -300, 100
-                node_output.location = 300, 50
-
-                node_transparent = tree.nodes.new('ShaderNodeBsdfTransparent')
-                node_transparent.location = -300, -100
-
-                node_mixshader = tree.nodes.new('ShaderNodeMixShader')
-                node_mixshader.location = 0, 50
-                node_mixshader.inputs[0].default_value = 1.0 - clay_color_alpha
-
-                # connecting the nodes
-                tree.links.new(node_diffuse.outputs[0], node_mixshader.inputs[1])
-                tree.links.new(node_transparent.outputs[0], node_mixshader.inputs[2])
-                tree.links.new(node_transparent.outputs[0], node_mixshader.inputs[2])
-                tree.links.new(node_mixshader.outputs[0], node_output.inputs[0])
-
-            else:
-
-                # connecting the nodes
-                tree.links.new(node_diffuse.outputs[0], node_output.inputs[0])
+            # connecting the nodes
+            tree.links.new(node_transparent.outputs[0], node_mixshader.inputs[1])
+            tree.links.new(node_diffuse.outputs[0], node_mixshader.inputs[2])
+            tree.links.new(node_mixshader.outputs[0], node_output.inputs[0])
 
             for node in tree.nodes:
                 node.select = False
@@ -427,11 +419,11 @@ class BlenderSceneW(BlenderScene):
 
         # else, create a new one with the color selected
         else:
-            wire_color = w_var.color_wire
+            color_wire = w_var.color_wire
 
             # separating rgb and alpha
-            wireframe_color_rgb = wire_color[0:3]
-            wireframe_color_alpha = wire_color[-1]
+            wireframe_color_rgb = color_wire[0:3]
+            wireframe_color_alpha = color_wire[-1]
 
             wireframe_mat = bpy.data.materials.new('wireframe')
             wireframe_mat.use_nodes = True
@@ -439,39 +431,31 @@ class BlenderSceneW(BlenderScene):
             tree.nodes.clear()
 
             # creating the nodes
+            node_transparent = tree.nodes.new('ShaderNodeBsdfTransparent')
+            node_transparent.location = -300, 100
+
             node_diffuse = tree.nodes.new('ShaderNodeBsdfDiffuse')
-            node_diffuse.location = -150, 50
+            node_diffuse.location = -300, -100
             node_diffuse.inputs[0].default_value = wireframe_color_rgb + (1.0,)
-            node_diffuse.inputs[1].default_value = 0.05
             node_diffuse.color = wireframe_color_rgb
 
             # referencing to this ID in the real-time change
-            node_diffuse.name = 'addon_wireframe'
+            node_diffuse.name = 'addon_wireframe_color'
+
+            node_mixshader = tree.nodes.new('ShaderNodeMixShader')
+            node_mixshader.location = 0, 50
+            node_mixshader.inputs[0].default_value = wireframe_color_alpha
+
+            # referencing to this ID in the real-time change
+            node_mixshader.name = 'addon_wireframe_alpha'
 
             node_output = tree.nodes.new('ShaderNodeOutputMaterial')
-            node_output.location = 150, 50
+            node_output.location = 300, 50
 
-            if wireframe_color_alpha != 1.0:
-                node_diffuse.location = -300, 100
-                node_output.location = 300, 50
-
-                node_transparent = tree.nodes.new('ShaderNodeBsdfTransparent')
-                node_transparent.location = -300, -100
-
-                node_mixshader = tree.nodes.new('ShaderNodeMixShader')
-                node_mixshader.location = 0, 50
-                node_mixshader.inputs[0].default_value = 1.0 - wireframe_color_alpha
-
-                # connecting the nodes
-                tree.links.new(node_diffuse.outputs[0], node_mixshader.inputs[1])
-                tree.links.new(node_transparent.outputs[0], node_mixshader.inputs[2])
-                tree.links.new(node_transparent.outputs[0], node_mixshader.inputs[2])
-                tree.links.new(node_mixshader.outputs[0], node_output.inputs[0])
-
-            else:
-
-                # connecting the nodes
-                tree.links.new(node_diffuse.outputs[0], node_output.inputs[0])
+            # connecting the nodes
+            tree.links.new(node_transparent.outputs[0], node_mixshader.inputs[1])
+            tree.links.new(node_diffuse.outputs[0], node_mixshader.inputs[2])
+            tree.links.new(node_mixshader.outputs[0], node_output.inputs[0])
 
             for node in tree.nodes:
                 node.select = False
