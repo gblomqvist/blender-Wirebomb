@@ -30,11 +30,11 @@ if 'bpy' in locals():
         importlib.reload(constants)
 
 bl_info = {
-    "name": "Cycles Wireframe and Clay (CWaC)",
+    "name": "Wirebomb",
     "author": "Gustaf Blomqvist",
     "version": (1, 0, 0),
     "blender": (2, 76, 0),
-    "location": "Render settings --> Set up Wireframe and Clay",
+    "location": "Render settings --> Wirebomb",
     "description": "Setting up wireframe and clay renders has never been easier!",
     "warning": "",
     "wiki_url": "",
@@ -212,7 +212,7 @@ class CWaC(bpy.types.PropertyGroup):
 class WireframePanel(bpy.types.Panel):
     """The panel in the GUI."""
 
-    bl_label = 'Set Up Wireframe and Clay'
+    bl_label = 'Wirebomb'
     bl_idname = 'RENDER_PT_wireframe'
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
