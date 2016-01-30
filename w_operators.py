@@ -95,7 +95,7 @@ class ConfigLoadOperator(bpy.types.Operator):
 
 
 class SelectLayersAffectedOperator(bpy.types.Operator):
-    """Selects all layers"""
+    """Selects all 'Affected' layers"""
     bl_label = "Select all layers affected"
     bl_idname = 'scene.wirebomb_select_layers_affected'
 
@@ -107,7 +107,7 @@ class SelectLayersAffectedOperator(bpy.types.Operator):
 
 
 class SelectLayersOtherOperator(bpy.types.Operator):
-    """Selects all layers"""
+    """Selects all 'Other included' layers"""
     bl_label = "Select all other layers"
     bl_idname = 'scene.wirebomb_select_layers_other'
 
@@ -119,7 +119,7 @@ class SelectLayersOtherOperator(bpy.types.Operator):
 
 
 class DeselectLayersAffectedOperator(bpy.types.Operator):
-    """Deselects all layers"""
+    """Deselects all 'Affected' layers"""
     bl_label = "Deselect all layers affected"
     bl_idname = 'scene.wirebomb_deselect_layers_affected'
 
@@ -131,7 +131,7 @@ class DeselectLayersAffectedOperator(bpy.types.Operator):
 
 
 class DeselectLayersOtherOperator(bpy.types.Operator):
-    """Deselects all layers"""
+    """Deselects all 'Other included' layers"""
     bl_label = "Deselect all other layers"
     bl_idname = 'scene.wirebomb_deselect_layers_other'
 
