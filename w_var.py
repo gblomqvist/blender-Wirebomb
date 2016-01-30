@@ -1,8 +1,7 @@
 # <pep8-80 compliant>
 
 error_101 = False  # no mesh selected
-error_301 = False  # no wire scene name
-error_302 = False  # no clay scene name
+error_301 = False  # no name for new scene
 
 # if checkboxes are active
 cb_clay_only_active = None

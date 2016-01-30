@@ -9,9 +9,33 @@ from . import constants
 class BlenderSceneW(BlenderScene):
     """A version of the class BlenderScene that is specific for this add-on."""
 
+    def __init__(self, scene, new_scene, new_name=None, renderer=None):
+        """Creates a full copy of scene if new_scene is set to True.
+
+        Args:
+            scene: A scene object which represents the scene to copy/work on. Later referred to as the 'original scene'.
+            new_scene: A boolean that if True, a full copy of scene will be created.
+            new_name: An optional string representing the (new) scene's name. Must be set if new_scene is set
+                to True.
+            renderer: An optional string representing the (new) scene's render engine, e.g. 'CYCLES'. Must be set if
+                new_scene is set to True.
+        """
+        self.original_scene = scene
+
+        if new_scene:
+            self.name = self.copy_scene(scene, new_name, renderer)
+
+        else:
+            if new_name is not None and len(new_name) != 0:
+                scene.name = new_name
+            self.name = scene.name
+
+            if renderer is not None:
+                scene.render.engine = renderer
+
     def select(self, mode, types=None, types_excluded=None, layers=None, layers_excluded=None,
                objects=None, objects_excluded=None):
-        """Selects or deselects objects, a special version of BlenderScene's select function.
+        """Selects or deselects objects, a special version of BlenderScene's function.
 
         (De)selects specific objects or objects by object types and layers.
 
@@ -550,9 +574,9 @@ class BlenderSceneW(BlenderScene):
         """Adds all used objects to three sets in w_var variables: affected objects, other objects and all used objects.
         """
         scene = self.set_as_active()
-        scene.cwac.data_objects_affected.clear()
-        scene.cwac.data_objects_other.clear()
-        scene.cwac.data_objects_all.clear()
+        scene.wirebomb.data_objects_affected.clear()
+        scene.wirebomb.data_objects_other.clear()
+        scene.wirebomb.data_objects_all.clear()
 
         if w_var.cb_only_selected:
             for obj in scene.objects:
@@ -563,8 +587,8 @@ class BlenderSceneW(BlenderScene):
                     w_var.objects_all_used.add(obj)
 
                     # adding object names to "permanent" collection properties
-                    scene.cwac.data_objects_affected.add().name = obj.name
-                    scene.cwac.data_objects_all.add().name = obj.name
+                    scene.wirebomb.data_objects_affected.add().name = obj.name
+                    scene.wirebomb.data_objects_all.add().name = obj.name
 
                 elif self.object_on_layer(obj, w_var.layer_numbers_other):
 
@@ -573,8 +597,8 @@ class BlenderSceneW(BlenderScene):
                     w_var.objects_all_used.add(obj)
 
                     # adding object names to "permanent" collection properties
-                    scene.cwac.data_objects_other.add().name = obj.name
-                    scene.cwac.data_objects_all.add().name = obj.name
+                    scene.wirebomb.data_objects_other.add().name = obj.name
+                    scene.wirebomb.data_objects_all.add().name = obj.name
 
         else:
             for obj in scene.objects:
@@ -585,8 +609,8 @@ class BlenderSceneW(BlenderScene):
                     w_var.objects_all_used.add(obj)
 
                     # adding object names to "permanent" collection properties
-                    scene.cwac.data_objects_affected.add().name = obj.name
-                    scene.cwac.data_objects_all.add().name = obj.name
+                    scene.wirebomb.data_objects_affected.add().name = obj.name
+                    scene.wirebomb.data_objects_all.add().name = obj.name
 
                 elif self.object_on_layer(obj, w_var.layer_numbers_other):
 
@@ -595,5 +619,5 @@ class BlenderSceneW(BlenderScene):
                     w_var.objects_all_used.add(obj)
 
                     # adding objects' names to "permanent" collection properties
-                    scene.cwac.data_objects_other.add().name = obj.name
-                    scene.cwac.data_objects_all.add().name = obj.name
+                    scene.wirebomb.data_objects_other.add().name = obj.name
+                    scene.wirebomb.data_objects_all.add().name = obj.name

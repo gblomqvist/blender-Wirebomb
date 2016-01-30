@@ -9,7 +9,7 @@ from . import w_var
 class WireframeOperator(bpy.types.Operator):
     """Set up wireframe/clay render"""
     bl_label = "Wireframe"
-    bl_idname = 'scene.cwac_set_up_new'
+    bl_idname = 'scene.wirebomb_set_up_new'
 
     def __init__(self):
         self.start = time.time()
@@ -54,7 +54,7 @@ class WireframeOperator(bpy.types.Operator):
 class ConfigSaveOperator(bpy.types.Operator):
     """Saves a config INI file"""
     bl_label = "Save INI file"
-    bl_idname = 'scene.cwac_config_save'
+    bl_idname = 'scene.wirebomb_config_save'
 
     filepath = bpy.props.StringProperty()
     filename = bpy.props.StringProperty()
@@ -77,7 +77,7 @@ class ConfigSaveOperator(bpy.types.Operator):
 class ConfigLoadOperator(bpy.types.Operator):
     """Loads a config INI file"""
     bl_label = "Load INI file"
-    bl_idname = 'scene.cwac_config_load'
+    bl_idname = 'scene.wirebomb_config_load'
 
     filepath = bpy.props.StringProperty()
     filename = bpy.props.StringProperty()
@@ -104,11 +104,11 @@ class ConfigLoadOperator(bpy.types.Operator):
 class SelectLayersAffectedOperator(bpy.types.Operator):
     """Selects all layers"""
     bl_label = "Select all layers affected"
-    bl_idname = 'scene.cwac_select_layers_affected'
+    bl_idname = 'scene.wirebomb_select_layers_affected'
 
     def execute(self, context):
         for i in range(0, 20):
-            context.scene.cwac.layers_affected[i] = True
+            context.scene.wirebomb.layers_affected[i] = True
 
         return {'FINISHED'}
 
@@ -116,11 +116,11 @@ class SelectLayersAffectedOperator(bpy.types.Operator):
 class SelectLayersOtherOperator(bpy.types.Operator):
     """Selects all layers"""
     bl_label = "Select all other layers"
-    bl_idname = 'scene.cwac_select_layers_other'
+    bl_idname = 'scene.wirebomb_select_layers_other'
 
     def execute(self, context):
         for i in range(0, 20):
-            context.scene.cwac.layers_other[i] = True
+            context.scene.wirebomb.layers_other[i] = True
 
         return {'FINISHED'}
 
@@ -128,11 +128,11 @@ class SelectLayersOtherOperator(bpy.types.Operator):
 class DeselectLayersAffectedOperator(bpy.types.Operator):
     """Deselects all layers"""
     bl_label = "Deselect all layers affected"
-    bl_idname = 'scene.cwac_deselect_layers_affected'
+    bl_idname = 'scene.wirebomb_deselect_layers_affected'
 
     def execute(self, context):
         for i in range(0, 20):
-            context.scene.cwac.layers_affected[i] = False
+            context.scene.wirebomb.layers_affected[i] = False
 
         return {'FINISHED'}
 
@@ -140,10 +140,10 @@ class DeselectLayersAffectedOperator(bpy.types.Operator):
 class DeselectLayersOtherOperator(bpy.types.Operator):
     """Deselects all layers"""
     bl_label = "Deselect all other layers"
-    bl_idname = 'scene.cwac_deselect_layers_other'
+    bl_idname = 'scene.wirebomb_deselect_layers_other'
 
     def execute(self, context):
         for i in range(0, 20):
-            context.scene.cwac.layers_other[i] = False
+            context.scene.wirebomb.layers_other[i] = False
 
         return {'FINISHED'}

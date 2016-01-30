@@ -45,12 +45,12 @@ bl_info = {
 
 def register():
     bpy.utils.register_module(__name__)
-    bpy.types.Scene.cwac = bpy.props.PointerProperty(type=CWaC)
+    bpy.types.Scene.wirebomb = bpy.props.PointerProperty(type=Wirebomb)
 
 
 def unregister():
     bpy.utils.unregister_module(__name__)
-    del bpy.types.Scene.cwac
+    del bpy.types.Scene.wirebomb
 
 
 if __name__ == '__main__':
@@ -59,63 +59,63 @@ if __name__ == '__main__':
 
 def update_color_wire(self, context):
     """Updates the wireframe material's color."""
-    if context.scene.cwac.wireframe_method == 'WIREFRAME_FREESTYLE':
-        if context.scene.cwac.data_freestyle_linestyle in bpy.data.linestyles:
-            linestyle = bpy.data.linestyles[context.scene.cwac.data_freestyle_linestyle]
-            linestyle.color = context.scene.cwac.color_wire[0:3]
-            linestyle.alpha = context.scene.cwac.color_wire[-1]
+    if context.scene.wirebomb.wireframe_method == 'WIREFRAME_FREESTYLE':
+        if context.scene.wirebomb.data_freestyle_linestyle in bpy.data.linestyles:
+            linestyle = bpy.data.linestyles[context.scene.wirebomb.data_freestyle_linestyle]
+            linestyle.color = context.scene.wirebomb.color_wire[0:3]
+            linestyle.alpha = context.scene.wirebomb.color_wire[-1]
 
-    elif context.scene.cwac.wireframe_method == 'WIREFRAME_MODIFIER':
-        if context.scene.cwac.data_material_wire in bpy.data.materials:
-            material = bpy.data.materials[context.scene.cwac.data_material_wire]
+    elif context.scene.wirebomb.wireframe_method == 'WIREFRAME_MODIFIER':
+        if context.scene.wirebomb.data_material_wire in bpy.data.materials:
+            material = bpy.data.materials[context.scene.wirebomb.data_material_wire]
 
             node_color = material.node_tree.nodes['addon_wireframe_color']
-            node_color.inputs[0].default_value = context.scene.cwac.color_wire[0:3] + (1.0,)
+            node_color.inputs[0].default_value = context.scene.wirebomb.color_wire[0:3] + (1.0,)
 
             node_mix = material.node_tree.nodes['addon_wireframe_alpha']
-            node_mix.inputs[0].default_value = context.scene.cwac.color_wire[-1]
+            node_mix.inputs[0].default_value = context.scene.wirebomb.color_wire[-1]
 
             # updating viewport color
-            material.diffuse_color = context.scene.cwac.color_wire[0:3]
+            material.diffuse_color = context.scene.wirebomb.color_wire[0:3]
 
 
 def update_color_clay(self, context):
     """Updates the clay material's color."""
-    if context.scene.cwac.data_material_clay in bpy.data.materials:
-        material = bpy.data.materials[context.scene.cwac.data_material_clay]
+    if context.scene.wirebomb.data_material_clay in bpy.data.materials:
+        material = bpy.data.materials[context.scene.wirebomb.data_material_clay]
 
         node_color = material.node_tree.nodes['addon_clay_color']
-        node_color.inputs[0].default_value = context.scene.cwac.color_clay[0:3] + (1.0, )
+        node_color.inputs[0].default_value = context.scene.wirebomb.color_clay[0:3] + (1.0, )
 
         node_mix = material.node_tree.nodes['addon_clay_alpha']
-        node_mix.inputs[0].default_value = context.scene.cwac.color_clay[-1]
+        node_mix.inputs[0].default_value = context.scene.wirebomb.color_clay[-1]
 
         # updating viewport color
-        material.diffuse_color = context.scene.cwac.color_clay[0:3]
+        material.diffuse_color = context.scene.wirebomb.color_clay[0:3]
 
 
 def update_wire_thickness(self, context):
     """Updates the wireframe's thickness."""
-    if context.scene.cwac.wireframe_method == 'WIREFRAME_FREESTYLE':
-        if context.scene.cwac.data_freestyle_linestyle in bpy.data.linestyles:
-            linestyle = bpy.data.linestyles[context.scene.cwac.data_freestyle_linestyle]
-            linestyle.thickness = context.scene.cwac.slider_wt_freestyle
+    if context.scene.wirebomb.wireframe_method == 'WIREFRAME_FREESTYLE':
+        if context.scene.wirebomb.data_freestyle_linestyle in bpy.data.linestyles:
+            linestyle = bpy.data.linestyles[context.scene.wirebomb.data_freestyle_linestyle]
+            linestyle.thickness = context.scene.wirebomb.slider_wt_freestyle
 
-    elif context.scene.cwac.wireframe_method == 'WIREFRAME_MODIFIER':
-        for col_obj in context.scene.cwac.data_objects_affected:
+    elif context.scene.wirebomb.wireframe_method == 'WIREFRAME_MODIFIER':
+        for col_obj in context.scene.wirebomb.data_objects_affected:
             if col_obj.name in bpy.data.objects:
                 obj = bpy.data.objects[col_obj.name]
                 if obj.type == 'MESH':
                     if 'addon_wireframe' in obj.modifiers:
-                        obj.modifiers['addon_wireframe'].thickness = context.scene.cwac.slider_wt_modifier
+                        obj.modifiers['addon_wireframe'].thickness = context.scene.wirebomb.slider_wt_modifier
 
 
 def update_cb_composited(self, context):
-    if context.scene.cwac.wireframe_method != 'WIREFRAME_FREESTYLE':
-        context.scene.cwac.cb_composited = False
+    if context.scene.wirebomb.wireframe_method != 'WIREFRAME_FREESTYLE':
+        context.scene.wirebomb.cb_composited = False
 
 
-class CWaC(bpy.types.PropertyGroup):
+class Wirebomb(bpy.types.PropertyGroup):
     """Stores data for the add-on."""
 
     # names of the materials used
@@ -230,15 +230,15 @@ class WireframePanel(bpy.types.Panel):
         # config file
         row = layout.row(align=True)
         row.label("Config file:")
-        row.operator(operator='scene.cwac_config_save', text='Save', icon='SAVE_PREFS')
-        row.operator(operator='scene.cwac_config_load', text='Load', icon='FILESEL')
+        row.operator(operator='scene.wirebomb_config_save', text='Save', icon='SAVE_PREFS')
+        row.operator(operator='scene.wirebomb_config_load', text='Load', icon='FILESEL')
 
         # box line
         layout.box()
 
         # method
         layout.separator()
-        layout.prop(context.scene.cwac, property='wireframe_method')
+        layout.prop(context.scene.wirebomb, property='wireframe_method')
 
         # box start
         layout.separator()
@@ -248,142 +248,142 @@ class WireframePanel(bpy.types.Panel):
         split = box.split()
         col = split.column()
         row = col.row()
-        row.prop(context.scene.cwac, property='cb_backup', text='Backup scene')
+        row.prop(context.scene.wirebomb, property='cb_backup', text='Backup scene')
 
         # clear render layers
         row = col.row()
-        row.prop(context.scene.cwac, property='cb_clear_rlayers', text='Clear render layers')
+        row.prop(context.scene.wirebomb, property='cb_clear_rlayers', text='Clear render layers')
 
         # clear materials
         row = col.row()
-        row.prop(context.scene.cwac, property='cb_clear_materials', text='Clear materials')
+        row.prop(context.scene.wirebomb, property='cb_clear_materials', text='Clear materials')
 
         # composited wires
         row = col.row()
 
-        if scene.get_scene().cwac.wireframe_method == 'WIREFRAME_FREESTYLE':
-            row.prop(context.scene.cwac, property='cb_composited', text='Composited wires')
+        if scene.get_scene().wirebomb.wireframe_method == 'WIREFRAME_FREESTYLE':
+            row.prop(context.scene.wirebomb, property='cb_composited', text='Composited wires')
 
         # only selected
         col = split.column()
         row = col.row()
 
-        if w_var.error_101 and scene.get_scene().cwac.cb_only_selected and not scene.check_any_selected():
+        if w_var.error_101 and scene.get_scene().wirebomb.cb_only_selected and not scene.check_any_selected():
             row.alert = True
 
         else:
             w_var.error_101 = False
 
-        row.prop(context.scene.cwac, property='cb_only_selected', text='Only selected')
+        row.prop(context.scene.wirebomb, property='cb_only_selected', text='Only selected')
 
         # ao as light
         row = col.row()
-        row.prop(context.scene.cwac, property='cb_ao', text='AO as light')
+        row.prop(context.scene.wirebomb, property='cb_ao', text='AO as light')
 
         # use clay
         row = col.row()
-        row.prop(context.scene.cwac, property='cb_clay', text='Use clay')
+        row.prop(context.scene.wirebomb, property='cb_clay', text='Use clay')
 
         # only clay
         row = col.row()
         row.separator()
 
-        if scene.get_scene().cwac.cb_clay is not True:
+        if scene.get_scene().wirebomb.cb_clay is not True:
             row.active = False
             w_var.cb_clay_only_active = False
 
         else:
             w_var.cb_clay_only_active = True
 
-        row.prop(context.scene.cwac, property='cb_clay_only', text='Only clay')
+        row.prop(context.scene.wirebomb, property='cb_clay_only', text='Only clay')
         # box end
 
         # wire color
         layout.separator()
         row = layout.row()
 
-        if ((scene.get_scene().cwac.cb_mat_wire and
-             scene.get_scene().cwac.wireframe_method != 'WIREFRAME_FREESTYLE') or
-                (scene.get_scene().cwac.cb_clay_only and w_var.cb_clay_only_active)):
+        if ((scene.get_scene().wirebomb.cb_mat_wire and
+             scene.get_scene().wirebomb.wireframe_method != 'WIREFRAME_FREESTYLE') or
+                (scene.get_scene().wirebomb.cb_clay_only and w_var.cb_clay_only_active)):
             row.active = False
 
-        row.prop(context.scene.cwac, property='color_wire', text='Wireframe color')
+        row.prop(context.scene.wirebomb, property='color_wire', text='Wireframe color')
 
-        if scene.get_scene().cwac.wireframe_method != 'WIREFRAME_FREESTYLE':
+        if scene.get_scene().wirebomb.wireframe_method != 'WIREFRAME_FREESTYLE':
 
             # use material (wire)
             split = layout.split()
             col = split.column()
             row = col.row()
 
-            if (scene.get_scene().cwac.wireframe_method == 'WIREFRAME_FREESTYLE' or
-                    (scene.get_scene().cwac.cb_clay_only and w_var.cb_clay_only_active)):
+            if (scene.get_scene().wirebomb.wireframe_method == 'WIREFRAME_FREESTYLE' or
+                    (scene.get_scene().wirebomb.cb_clay_only and w_var.cb_clay_only_active)):
                 row.active = False
                 w_var.cb_mat_wire_active = False
 
             else:
                 w_var.cb_mat_wire_active = True
 
-            if scene.get_scene().cwac.cb_mat_wire and scene.get_scene().cwac.material_wire == '':
+            if scene.get_scene().wirebomb.cb_mat_wire and scene.get_scene().wirebomb.material_wire == '':
                 row.alert = True
 
-            row.prop(context.scene.cwac, property='cb_mat_wire', text='Use material:')
+            row.prop(context.scene.wirebomb, property='cb_mat_wire', text='Use material:')
 
             # wire material
             col = split.column()
             row = col.row()
 
-            if (not scene.get_scene().cwac.cb_mat_wire or
-                    (scene.get_scene().cwac.cb_clay_only and scene.get_scene().cwac.cb_clay)):
+            if (not scene.get_scene().wirebomb.cb_mat_wire or
+                    (scene.get_scene().wirebomb.cb_clay_only and scene.get_scene().wirebomb.cb_clay)):
                 row.active = False
 
-            row.prop_search(context.scene.cwac, 'material_wire', bpy.data, 'materials', text='')
+            row.prop_search(context.scene.wirebomb, 'material_wire', bpy.data, 'materials', text='')
 
         # clay color
         layout.separator()
         row = layout.row()
 
-        if scene.get_scene().cwac.cb_mat_clay or not scene.get_scene().cwac.cb_clay:
+        if scene.get_scene().wirebomb.cb_mat_clay or not scene.get_scene().wirebomb.cb_clay:
             row.active = False
 
-        row.prop(context.scene.cwac, property='color_clay', text='Clay color')
+        row.prop(context.scene.wirebomb, property='color_clay', text='Clay color')
 
         # use material (clay)
         split = layout.split()
         col = split.column()
         row = col.row()
 
-        if not scene.get_scene().cwac.cb_clay:
+        if not scene.get_scene().wirebomb.cb_clay:
             row.active = False
             w_var.cb_mat_clay_active = False
 
         else:
             w_var.cb_mat_clay_active = True
 
-        if scene.get_scene().cwac.cb_mat_clay and scene.get_scene().cwac.material_clay == '':
+        if scene.get_scene().wirebomb.cb_mat_clay and scene.get_scene().wirebomb.material_clay == '':
             row.alert = True
 
-        row.prop(context.scene.cwac, property='cb_mat_clay', text='Use material:')
+        row.prop(context.scene.wirebomb, property='cb_mat_clay', text='Use material:')
 
         # clay material
         col = split.column()
         row = col.row()
 
-        if not (scene.get_scene().cwac.cb_mat_clay and w_var.cb_mat_clay_active):
+        if not (scene.get_scene().wirebomb.cb_mat_clay and w_var.cb_mat_clay_active):
             row.active = False
 
-        row.prop_search(context.scene.cwac, 'material_clay', bpy.data, 'materials', text='')
+        row.prop_search(context.scene.wirebomb, 'material_clay', bpy.data, 'materials', text='')
 
         # wire thickness
         layout.separator()
         row = layout.row()
         row.label('Wireframe thickness:')
 
-        if scene.get_scene().cwac.wireframe_method == 'WIREFRAME_FREESTYLE':
-            row.prop(context.scene.cwac, property='slider_wt_freestyle', text='Thickness')
+        if scene.get_scene().wirebomb.wireframe_method == 'WIREFRAME_FREESTYLE':
+            row.prop(context.scene.wirebomb, property='slider_wt_freestyle', text='Thickness')
 
-        elif scene.get_scene().cwac.wireframe_method == 'WIREFRAME_MODIFIER':
-            row.prop(context.scene.cwac, property='slider_wt_modifier', text='Thickness')
+        elif scene.get_scene().wirebomb.wireframe_method == 'WIREFRAME_MODIFIER':
+            row.prop(context.scene.wirebomb, property='slider_wt_modifier', text='Thickness')
 
         # 'affected layers' buttons
         layout.separator()
@@ -392,36 +392,36 @@ class WireframePanel(bpy.types.Panel):
         col.label(text='Affected layers:')
         row = col.row(align=True)
 
-        if scene.get_scene().cwac.cb_only_selected:
+        if scene.get_scene().wirebomb.cb_only_selected:
             col.active = False
             row.active = False
 
-        row.operator(operator='scene.cwac_select_layers_affected', text='All')
-        row.operator(operator='scene.cwac_deselect_layers_affected', text='None')
-        col.prop(context.scene.cwac, property='layers_affected', text='')
+        row.operator(operator='scene.wirebomb_select_layers_affected', text='All')
+        row.operator(operator='scene.wirebomb_deselect_layers_affected', text='None')
+        col.prop(context.scene.wirebomb, property='layers_affected', text='')
 
         # 'other layers' buttons
         col = split.column()
         col.label(text='Other included layers:')
         row = col.row(align=True)
-        row.operator(operator='scene.cwac_select_layers_other', text='All')
-        row.operator(operator='scene.cwac_deselect_layers_other', text='None')
-        col.prop(context.scene.cwac, property='layers_other', text='')
+        row.operator(operator='scene.wirebomb_select_layers_other', text='All')
+        row.operator(operator='scene.wirebomb_deselect_layers_other', text='None')
+        col.prop(context.scene.wirebomb, property='layers_other', text='')
 
         # scene name 1
         layout.separator()
         row = layout.row()
 
-        if w_var.error_301 and len(scene.get_scene().cwac.scene_name_1) == 0:
+        if w_var.error_301 and len(scene.get_scene().wirebomb.scene_name_1) == 0 and scene.get_scene().wirebomb.cb_backup:
             row.alert = True
 
         else:
             w_var.error_301 = False
 
-        row.prop(context.scene.cwac, property='scene_name_1', text='Scene name')
+        row.prop(context.scene.wirebomb, property='scene_name_1', text='Scene name')
 
         # 'set up new' and 'quick remove' buttons
         layout.separator()
         row = layout.row()
         row.scale_y = 1.3
-        row.operator(operator='scene.cwac_set_up_new', text='Set up new', icon='WIRE')
+        row.operator(operator='scene.wirebomb_set_up_new', text='Set up new', icon='WIRE')
