@@ -11,13 +11,16 @@ class WireframeOperator(bpy.types.Operator):
     bl_label = "Wireframe"
     bl_idname = 'scene.wirebomb_set_up_new'
 
-    def __init__(self):
-        self.start = time.time()
-        self.success = False
-        self.error_msg = ""
-
     def execute(self, context):
-        if self.success:
+        start = time.time()
+
+        # saves information from UI and resets variables
+        w_tools.set_variables(context)
+
+        # checks for any errors
+        success, error_msg = w_tools.error_check(context)
+
+        if success:
 
             # initiates progress bar and updates it to 1 %
             context.window_manager.progress_begin(0, 100)
@@ -33,22 +36,12 @@ class WireframeOperator(bpy.types.Operator):
             # terminates the progress bar
             context.window_manager.progress_end()
 
-            self.report({'INFO'}, "Setup done in {} seconds!".format(round(time.time() - self.start, 2)))
+            self.report({'INFO'}, "Setup done in {} seconds!".format(round(time.time() - start, 3)))
 
         elif not self.success:
-            self.report({'ERROR'}, self.error_msg)
+            self.report({'ERROR'}, error_msg)
 
         return {'FINISHED'}
-
-    def invoke(self, context, event):
-
-        # saves information from UI and resets variables
-        w_tools.set_variables(context)
-
-        # checks for any errors
-        self.success, self.error_msg = w_tools.error_check(context)
-
-        return self.execute(context)
 
 
 class ConfigSaveOperator(bpy.types.Operator):
