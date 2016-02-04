@@ -9,7 +9,7 @@ def layerlist_to_numberset(layer_list):
 
     Example:
         >>> print(layerlist_to_numberset([False, True, False, False, True]))
-        [1, 4]
+        {1, 4}
 
         This because layer 2 (index 1) and layer 3 (index 4) are both True.
 
@@ -20,6 +20,7 @@ def layerlist_to_numberset(layer_list):
     Returns:
         A set consisting of integers representing the layers that are True in layer_list.
     """
+    # TODO: Doesnt't it belong to the BlenderScene class?
     number_set = set()
 
     for i in range(0, 20):
@@ -40,8 +41,8 @@ def manipulate_layerlists(mode, list1, list2):
 
     Args:
         mode: A string, either 'add' to add the lists or 'subtract' to subtract list2 from list1.
-        list1: One of the layer lists
-        list2: The other one of the layer lists
+        list1: One of the layer lists.
+        list2: The other one of the layer lists.
 
     Returns:
         The combined layer list.

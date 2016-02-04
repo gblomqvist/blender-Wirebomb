@@ -86,6 +86,76 @@ class BlenderScene:
 
         return self.get_scene()
 
+    def set_layers(self, layers, deactivate_other=True):
+        """Activates layer(s) passed in and deactivates other layer(s) depending on deactive_other variable.
+
+        If you have an array of booleans you should instead use: scene.layers = array
+
+        Args:
+            layers: An array consisting of integers representing the layers to be activated.
+            deactivate_other: A boolean which if True deactivates all other layers.
+        """
+        scene = self.set_as_active()
+
+        if deactivate_other:
+            new_layers = [False, ]*20
+
+            for n in layers:
+                new_layers[n-1] = True
+
+        else:
+            for n in layers:
+                scene.layers[n] = True
+
+    def find_layer_by_geometry(self, wanted):
+        """Finds and returns the layer containing least/most geometry depending on wanted variable.
+
+        If multiple layers are correct and contain the same amount of geometry, the first one found will be returned.
+
+        Args:
+            wanted: A string, either 'LEAST' or 'MOST' depending on if you want the layer with the least/most geometry.
+
+        Returns:
+            The layer containing least/most geometry.
+        """
+        # TODO: Comment.
+        scene = self.set_as_active()
+        previous_layers = tuple(scene.layers)
+        wanted_geo = None
+        wanted_n = 0
+
+        for n in range(1, 20):
+            layer = scene.layers[n]
+            self.set_layers((layer,))
+            stats = scene.statistics()
+
+            geo_start = stats.index('Tris:') + 5
+            geo_end = stats.index(' ', geo_start)
+
+            geo_str = stats[geo_start:geo_end].split(',')
+            geo_int = int(''.join(geo_str))
+
+            # TODO: This code runs more often than it should?
+            print('does this code run a lot?')
+            print(geo_int)
+
+            if wanted == 'LEAST':
+                if wanted_geo is None or geo_int < wanted_geo:
+                    wanted_geo = geo_int
+                    wanted_n = n
+
+            elif wanted == 'MOST':
+                if wanted_geo is None or geo_int > wanted_geo:
+                    wanted_geo = geo_int
+                    wanted_n = n
+
+            else:
+                raise ValueError("No such wanted as {}".format(wanted))
+
+        scene.layers = previous_layers
+
+        return wanted_n
+
     def set_active_object(self, obj_types=constants.obj_types):
         """Sets the active object to be one among the selected objects.
 
@@ -255,7 +325,7 @@ class BlenderScene:
             to_layer: An array consisting of integers representing the layers to which the object(s) will be moved.
         """
         scene = self.set_as_active()
-        previous_layers = list(scene.layers)
+        previous_layers = tuple(scene.layers)
         previous_area = bpy.context.area.type
 
         layers = [False, ] * 20
@@ -281,7 +351,7 @@ class BlenderScene:
             to_layer: An array consisting of integers representing the layers to which the object(s) will be copied.
         """
         scene = self.set_as_active()
-        previous_layers = list(scene.layers)
+        previous_layers = tuple(scene.layers)
         previous_area = bpy.context.area.type
 
         # can't duplicate objects on inactive layers
@@ -303,7 +373,7 @@ class BlenderScene:
             to_scene: A scene object representing the scene to which the objects will be copied.
         """
         scene = self.set_as_active()
-        previous_layers = list(scene.layers)
+        previous_layers = tuple(scene.layers)
         previous_area = bpy.context.area.type
 
         # can't duplicate objects on inactive layers
@@ -323,7 +393,7 @@ class BlenderScene:
         """Removes all materials from all the selected objects in the scene."""
         scene = self.set_as_active()
         previous_area = bpy.context.area.type
-        previous_layers = list(scene.layers)
+        previous_layers = tuple(scene.layers)
 
         bpy.context.active_object.data.materials.clear()
 

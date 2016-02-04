@@ -22,6 +22,11 @@ class BlenderSceneW(BlenderScene):
         """
         self.original_scene = scene
 
+        # saves current states to restore in the end
+        self.original_use_simplify = scene.render.use_simplify
+        self.original_simplify_subdivision = scene.render.simplify_subdivision
+        self.original_layers = list(scene.layers)
+
         if new_scene:
             self.name = self.copy_scene(scene, new_name, renderer)
 
@@ -32,6 +37,25 @@ class BlenderSceneW(BlenderScene):
 
             if renderer is not None:
                 scene.render.engine = renderer
+
+    def prepare_setup(self, reverse=False):
+        """Prepares scene for a faster wireframe/clay setup.
+
+        Args:
+            reverse: A boolean which if True, instead restores scene from a faster wireframe/clay setup preparation.
+        """
+        scene = self.set_as_active()
+        # TODO: Comment.
+        if not reverse:
+            scene.render.use_simplify = True
+            scene.render.simplify_subdivision = 0
+            smallest_layer = self.find_layer_by_geometry('LEAST')
+            self.set_layers((smallest_layer,))
+
+        else:
+            scene.render.use_simplify = self.original_use_simplify
+            scene.render.simplify_subdivision = self.original_simplify_subdivision
+            scene.layers = self.original_layers
 
     def select(self, mode, types=None, types_excluded=None, layers=None, layers_excluded=None,
                objects=None, objects_excluded=None):
@@ -405,7 +429,7 @@ class BlenderSceneW(BlenderScene):
 
         previous_area = bpy.context.area.type
         bpy.context.area.type = 'VIEW_3D'
-        previous_layers = list(scene.layers)
+        previous_layers = tuple(scene.layers)
 
         # can't enter edit mode on objects on inactive layers
         scene.layers = (True,)*20

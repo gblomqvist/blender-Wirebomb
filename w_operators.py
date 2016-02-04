@@ -2,6 +2,7 @@
 
 import bpy
 import time
+from .w_b_scene import BlenderSceneW
 from . import w_tools
 from . import w_var
 
@@ -26,12 +27,20 @@ class WireframeOperator(bpy.types.Operator):
             context.window_manager.progress_begin(0, 100)
             context.window_manager.progress_update(1)
 
+            # creates wireframe/clay scene object
+            scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_1, 'CYCLES')
+
+            scene.prepare_setup()
+
+            # TODO: Give only_clay own function.
             # runs wireframing
             if w_var.wireframe_method == 'WIREFRAME_FREESTYLE':
-                w_tools.set_up_wireframe_freestyle()
+                w_tools.set_up_wireframe_freestyle(scene)
 
             elif w_var.wireframe_method == 'WIREFRAME_MODIFIER':
-                w_tools.set_up_wireframe_modifier()
+                w_tools.set_up_wireframe_modifier(scene)
+
+            scene.prepare_setup(reverse=True)
 
             # terminates the progress bar
             context.window_manager.progress_end()

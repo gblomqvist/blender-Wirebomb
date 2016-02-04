@@ -254,11 +254,8 @@ def config_save(context, filepath):
         config.write(configfile)
 
 
-def set_up_wireframe_freestyle():
+def set_up_wireframe_freestyle(wire_scene):
     """Sets up the complete wireframe using the freestyle setup."""
-
-    # creates wireframe scene
-    wire_scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_1, 'CYCLES')
 
     # sets all used objects to three sets: affected objects, other object and all used objects
     # (need to do after I copy the scene to get the objects from the copied scene)
@@ -318,15 +315,12 @@ def set_up_wireframe_freestyle():
     wire_scene.select('DESELECT', objects={'ALL'})
 
 
-def set_up_wireframe_modifier():
+def set_up_wireframe_modifier(wire_scene):
     """Sets up the complete wireframe using the modifier setup.
 
     If the mesh(es) you apply this to have several materials each and you don't use clay, the material of the
     wireframe will not be the expected one as it depends on the material offset set in the wireframe modifier.
     """
-
-    # creates wireframe scene
-    wire_scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_1, 'CYCLES')
 
     # sets all used objects to three sets: affected objects, other object and all used objects
     # (need to do after I copy the scene to get the objects from the copied scene)
