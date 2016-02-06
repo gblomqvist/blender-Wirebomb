@@ -1,8 +1,10 @@
 # <pep8-80 compliant>
 
 import bpy
+import configparser
 from .b_scene import BlenderScene
 from . import w_var
+from . import b_tools
 from . import constants
 
 
@@ -38,15 +40,15 @@ class BlenderSceneW(BlenderScene):
             if renderer is not None:
                 scene.render.engine = renderer
 
-    def prepare_setup(self, reverse=False):
+    def prepare_fast_setup(self, revert=False):
         """Prepares scene for a faster wireframe/clay setup.
 
         Args:
-            reverse: A boolean which if True, instead restores scene from a faster wireframe/clay setup preparation.
+            revert: A boolean which if True instead reverts scene to its original state (before prepare_setup).
         """
         scene = self.set_as_active()
-        # TODO: Comment.
-        if not reverse:
+
+        if not revert:
             scene.render.use_simplify = True
             scene.render.simplify_subdivision = 0
             smallest_layer = self.find_layer_by_geometry('LEAST')
@@ -56,6 +58,124 @@ class BlenderSceneW(BlenderScene):
             scene.render.use_simplify = self.original_use_simplify
             scene.render.simplify_subdivision = self.original_simplify_subdivision
             scene.layers = self.original_layers
+
+    def set_up_clay(self):
+        """Sets up clay."""
+
+        # adds clay material to affected meshes and saves material name
+        self.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
+        self.get_scene().wirebomb.data_material_clay = self.add_clay_to_selected().name
+
+    def clear_materials(self):
+        """Clears all materials."""
+
+        # removes all materials from affected meshes
+        self.select('SELECT', {'MESH'}, objects_excluded={'ELSE'})
+        self.clear_materials_on_selected()
+
+    def set_up_all_ao(self):
+        """Sets up all the AO."""
+
+        # sets up ambient occlusion lighting
+        self.set_up_world_ao()
+        self.comp_add_ao()
+
+    def set_up_clay_only(self):
+        """Sets up clay only."""
+
+        # sets up renderlayer named 'clay' instead of 'wireframe'
+        self.set_up_rlayer('clay')
+
+        # updates progress bar to 50 %
+        bpy.context.window_manager.progress_update(50)
+
+        if w_var.cb_clear_materials:
+            self.clear_materials()
+
+        # updates progress bar to 75 %
+        bpy.context.window_manager.progress_update(75)
+
+        self.set_up_clay()
+
+        # updates progress bar to 99 %
+        bpy.context.window_manager.progress_update(99)
+
+        if w_var.cb_ao:
+            self.set_up_all_ao()
+
+        # deselects all objects as a last thing to clean up
+        self.select('DESELECT', objects={'ALL'})
+
+    def set_up_wireframe_freestyle(self):
+        """Sets up the complete wireframe using the freestyle setup."""
+
+        # sets up renderlayer(s) (depending on 'Composited wireframing' checkbox) and freestyle wireframing
+        # also saves freestyle linestyle name
+        self.set_up_rlayer('wireframe', rlname_other='other')
+        self.get_scene().wirebomb.data_freestyle_linestyle = self.add_wireframe_freestyle().name
+
+        # updates progress bar to 50 %
+        bpy.context.window_manager.progress_update(50)
+
+        if w_var.cb_clear_materials:
+            self.clear_materials()
+
+        # updates progress bar to 75 %
+        bpy.context.window_manager.progress_update(75)
+
+        if w_var.cb_clay:
+            self.set_up_clay()
+
+        # updates progress bar to 99 %
+        bpy.context.window_manager.progress_update(99)
+
+        if w_var.cb_ao and not w_var.cb_composited:
+            self.set_up_all_ao()
+
+        elif w_var.cb_composited:
+
+            # sets up composition for wireframe and sets up ambient occlusion lighting if used
+            self.comp_add_wireframe_freestyle()
+            bpy.data.scenes[self.name].cycles.film_transparent = True
+
+            if w_var.cb_ao:
+                self.set_up_world_ao()
+
+        # deselects all objects as a last thing to clean up
+        self.select('DESELECT', objects={'ALL'})
+
+    def set_up_wireframe_modifier(self):
+        """Sets up the complete wireframe using the modifier setup.
+
+        If the mesh(es) you apply this to have several materials each and you don't use clay, the material of the
+        wireframe will not be the expected one as it depends on the material offset set in the wireframe modifier.
+        """
+        if w_var.cb_clear_materials:
+            self.clear_materials()
+
+        # updates progress bar to 50 %
+        bpy.context.window_manager.progress_update(50)
+
+        if w_var.cb_clay:
+
+            # adding clay material before wireframe material for material offset in wireframe modifier to be correct
+            self.set_up_clay()
+
+        # updates progress bar to 75 %
+        bpy.context.window_manager.progress_update(75)
+
+        # sets up renderlayer and adds wireframe modifier/material to affected meshes and saves wireframe material
+        self.set_up_rlayer('wireframe')
+        self.get_scene().wirebomb.data_material_wire = self.add_wireframe_modifier().name
+
+        # updates progress bar to 99 %
+        bpy.context.window_manager.progress_update(99)
+
+        if w_var.cb_ao:
+            self.set_up_all_ao()
+
+        # deselects all objects as a last thing to clean up
+        self.select('DESELECT', objects={'ALL'})
 
     def select(self, mode, types=None, types_excluded=None, layers=None, layers_excluded=None,
                objects=None, objects_excluded=None):
@@ -645,3 +765,239 @@ class BlenderSceneW(BlenderScene):
                     # adding objects' names to "permanent" collection properties
                     scene.wirebomb.data_objects_other.add().name = obj.name
                     scene.wirebomb.data_objects_all.add().name = obj.name
+
+    def wirebomb_error_check(self):
+        """Checks for any possible errors."""
+        scene = self.set_as_active()
+        success = True
+        error_msg = ""
+
+        if w_var.cb_only_selected and not scene.check_any_selected('MESH'):
+            error_msg += "- Checkbox 'Only selected' is activated but no mesh is selected!\n"
+            success = False
+
+            # used for row alert in __init__.py
+            w_var.error_101 = True
+
+        if (not w_var.cb_only_selected and
+                not len(w_var.layer_numbers_affected) > 0 and not len(w_var.layer_numbers_other) > 0):
+            error_msg += "- No layers selected! Maybe you forgot to use 'Only selected'?\n"
+            success = False
+
+        if w_var.cb_mat_wire and w_var.mat_wire_name == '':
+            error_msg += '- No wireframe material selected!\n'
+            success = False
+
+        if w_var.cb_mat_clay and w_var.mat_clay_name == '':
+            error_msg += '- No clay material selected!\n'
+            success = False
+
+        if len(w_var.scene_name_1) == 0 and w_var.cb_backup:
+            error_msg += '- No wireframe/clay scene name!\n'
+            success = False
+
+            # used for row alert in __init__.py
+            w_var.error_301 = True
+
+        return success, error_msg
+
+    def wirebomb_config_load(self, filepath):
+        """Loads an INI config file from filepath."""
+        scene = self.set_as_active()
+        config = configparser.ConfigParser()
+        config.read(filepath)
+
+        if 'WIREFRAME TYPE' in config and 'wireframe_method' in config['WIREFRAME TYPE']:
+            scene.wirebomb.wireframe_method = config['WIREFRAME TYPE']['wireframe_method']
+
+        if 'CHECKBOXES' in config:
+            if 'cb_backup' in config['CHECKBOXES']:
+                scene.wirebomb.cb_backup = eval(config['CHECKBOXES']['cb_backup'])
+
+            if 'cb_clear_rlayers' in config['CHECKBOXES']:
+                scene.wirebomb.cb_clear_rlayers = eval(config['CHECKBOXES']['cb_clear_rlayers'])
+
+            if 'cb_clear_materials' in config['CHECKBOXES']:
+                scene.wirebomb.cb_clear_materials = eval(config['CHECKBOXES']['cb_clear_materials'])
+
+            if 'cb_composited' in config['CHECKBOXES']:
+                scene.wirebomb.cb_composited = eval(config['CHECKBOXES']['cb_composited'])
+
+            if 'cb_only_selected' in config['CHECKBOXES']:
+                scene.wirebomb.cb_only_selected = eval(config['CHECKBOXES']['cb_only_selected'])
+
+            if 'cb_ao' in config['CHECKBOXES']:
+                scene.wirebomb.cb_ao = eval(config['CHECKBOXES']['cb_ao'])
+
+            if 'cb_clay' in config['CHECKBOXES']:
+                scene.wirebomb.cb_clay = eval(config['CHECKBOXES']['cb_clay'])
+
+            if 'cb_clay_only' in config['CHECKBOXES']:
+                scene.wirebomb.cb_clay_only = eval(config['CHECKBOXES']['cb_clay_only'])
+
+            if 'cb_mat_wire' in config['CHECKBOXES']:
+                scene.wirebomb.cb_mat_wire = eval(config['CHECKBOXES']['cb_mat_wire'])
+
+            if 'cb_mat_clay' in config['CHECKBOXES']:
+                scene.wirebomb.cb_mat_clay = eval(config['CHECKBOXES']['cb_mat_clay'])
+
+        if 'COLORS SET' in config:
+            if 'color_wireframe' in config['COLORS SET']:
+                scene.wirebomb.color_wire = eval(config['COLORS SET']['color_wireframe'])
+
+            if 'color_clay' in config['COLORS SET']:
+                scene.wirebomb.color_clay = eval(config['COLORS SET']['color_clay'])
+
+        if 'MATERIALS SET' in config:
+            if 'wireframe' in config['MATERIALS SET']:
+                if config['MATERIALS SET']['wireframe'] in bpy.data.materials:
+                    scene.wirebomb.material_wire = config['MATERIALS SET']['wireframe']
+
+            if 'clay' in config['MATERIALS SET']:
+                if config['MATERIALS SET']['clay'] in bpy.data.materials:
+                    scene.wirebomb.material_clay = config['MATERIALS SET']['clay']
+
+        if 'SLIDERS' in config:
+            if 'slider_wt_freestyle' in config['SLIDERS']:
+                scene.wirebomb.slider_wt_freestyle = eval(config['SLIDERS']['slider_wt_freestyle'])
+
+            if 'slider_wt_modifier' in config['SLIDERS']:
+                scene.wirebomb.slider_wt_modifier = eval(config['SLIDERS']['slider_wt_modifier'])
+
+        if 'LAYERS SELECTED' in config:
+            if 'layers_affected' in config['LAYERS SELECTED']:
+                scene.wirebomb.layers_affected = eval(config['LAYERS SELECTED']['layers_affected'])
+
+            if 'layers_other' in config['LAYERS SELECTED']:
+                scene.wirebomb.layers_other = eval(config['LAYERS SELECTED']['layers_other'])
+
+        if 'SCENE NAME SET' in config:
+            if 'scene_name_1' in config['SCENE NAME SET']:
+                scene.wirebomb.scene_name_1 = config['SCENE NAME SET']['scene_name_1']
+
+    def wirebomb_config_save(self, filepath):
+        """Saves an INI config file to filepath."""
+        scene = self.set_as_active()
+        config = configparser.ConfigParser()
+
+        config['WIREFRAME TYPE'] = {'wireframe_method': scene.wirebomb.wireframe_method}
+
+        config['CHECKBOXES'] = {'cb_backup': scene.wirebomb.cb_backup,
+                                'cb_clear_rlayers': scene.wirebomb.cb_clear_rlayers,
+                                'cb_clear_materials': scene.wirebomb.cb_clear_materials,
+                                'cb_composited': scene.wirebomb.cb_composited,
+                                'cb_only_selected': scene.wirebomb.cb_only_selected,
+                                'cb_ao': scene.wirebomb.cb_ao,
+                                'cb_clay': scene.wirebomb.cb_clay,
+                                'cb_clay_only': scene.wirebomb.cb_clay_only,
+                                'cb_mat_wire': scene.wirebomb.cb_mat_wire,
+                                'cb_mat_clay': scene.wirebomb.cb_mat_clay}
+
+        config['COLORS SET'] = {'color_wireframe': list(scene.wirebomb.color_wire),
+                                'color_clay': list(scene.wirebomb.color_clay)}
+
+        config['MATERIALS SET'] = {'wireframe': scene.wirebomb.material_wire,
+                                   'clay': scene.wirebomb.material_clay}
+
+        config['SLIDERS'] = {'slider_wt_freestyle': scene.wirebomb.slider_wt_freestyle,
+                             'slider_wt_modifier': scene.wirebomb.slider_wt_modifier}
+
+        config['LAYERS SELECTED'] = {'layers_affected': list(scene.wirebomb.layers_affected),
+                                     'layers_other': list(scene.wirebomb.layers_other)}
+
+        config['SCENE NAME SET'] = {'scene_name_1': scene.wirebomb.scene_name_1}
+
+        with open(filepath, 'w') as configfile:
+            config.write(configfile)
+
+    def wirebomb_set_variables(self):
+        """Sets variables in w_var with data from the UI, also resets some variables."""
+        scene = self.set_as_active()
+
+        # resetting render layer names
+        w_var.rlname = ''
+        w_var.rlname_other = ''
+
+        # resetting objects selected
+        w_var.objects_affected = set()
+        w_var.objects_other = set()
+        w_var.objects_all_used = set()
+
+        # from interface:
+        # wireframe type
+        w_var.wireframe_method = scene.wirebomb.wireframe_method
+
+        # checkboxes
+        w_var.cb_backup = scene.wirebomb.cb_backup
+        w_var.cb_clear_rlayers = scene.wirebomb.cb_clear_rlayers
+        w_var.cb_clear_materials = scene.wirebomb.cb_clear_materials
+        w_var.cb_composited = w_var.cb_composited_active and scene.wirebomb.cb_composited
+        w_var.cb_only_selected = scene.wirebomb.cb_only_selected
+        w_var.cb_ao = scene.wirebomb.cb_ao
+        w_var.cb_clay = scene.wirebomb.cb_clay
+        w_var.cb_clay_only = w_var.cb_clay_only_active and scene.wirebomb.cb_clay_only
+        w_var.cb_mat_wire = w_var.cb_mat_wire_active and scene.wirebomb.cb_mat_wire
+        w_var.cb_mat_clay = w_var.cb_mat_clay_active and scene.wirebomb.cb_mat_clay
+
+        # colors set
+        w_var.color_wire = scene.wirebomb.color_wire
+        w_var.color_clay = scene.wirebomb.color_clay
+
+        # materials set (names)
+        w_var.mat_wire_name = scene.wirebomb.material_wire
+        w_var.mat_clay_name = scene.wirebomb.material_clay
+
+        # sliders
+        w_var.slider_wt_freestyle = scene.wirebomb.slider_wt_freestyle
+        w_var.slider_wt_modifier = scene.wirebomb.slider_wt_modifier
+
+        # layers selected
+        layers_affected = self.set_layers_affected()
+        layers_other = self.set_layers_other(layers_affected)
+        w_var.layer_numbers_affected = b_tools.layerlist_to_numberset(layers_affected)
+        w_var.layer_numbers_other = b_tools.layerlist_to_numberset(layers_other)
+
+        # affected and other layers together, | is logical OR operator
+        w_var.layer_numbers_all_used = w_var.layer_numbers_affected | w_var.layer_numbers_other
+
+        # scene name set
+        w_var.scene_name_1 = scene.wirebomb.scene_name_1
+
+    def set_layers_affected(self):
+        """Sets all layers who will be affected by wireframing and/or clay material, in a list.
+
+        Returns:
+            A list with booleans representing all the layers that will be affected affected by
+                wireframing and/or clay material.
+        """
+        scene = self.set_as_active()
+
+        if w_var.cb_only_selected:
+            layers_affected = [False, ]*20
+
+            for obj in scene.objects:
+                if obj.select:
+                    layers_affected = b_tools.manipulate_layerlists('add', layers_affected, obj.layers)
+
+        else:
+            layers_affected = list(scene.wirebomb.layers_affected)
+
+        return layers_affected
+
+    def set_layers_other(self, layers_affected):
+        """Sets all layers who will be included in the render layer just as they are, in a list.
+
+        Args:
+            layers_affected: An array consisting of booleans representing the 'Affected' layers.
+
+        Returns:
+            A list with booleans representing all the layers that will be included in the render layer just as they are.
+        """
+        scene = self.set_as_active()
+        layers_other = list(scene.wirebomb.layers_other)
+
+        for index in range(0, 20):
+            if layers_other[index] and layers_affected[index]:
+                layers_other[index] = False
+
+        return layers_other

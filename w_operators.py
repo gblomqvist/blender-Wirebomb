@@ -3,7 +3,6 @@
 import bpy
 import time
 from .w_b_scene import BlenderSceneW
-from . import w_tools
 from . import w_var
 
 
@@ -14,12 +13,14 @@ class WireframeOperator(bpy.types.Operator):
 
     def execute(self, context):
         start = time.time()
+        original_scene = context.scene
+        my_scene = BlenderSceneW(original_scene, False)
 
-        # saves information from UI and resets variables
-        w_tools.set_variables(context)
+        # saves information from UI and (re)sets variables
+        my_scene.wirebomb_set_variables()
 
         # checks for any errors
-        success, error_msg = w_tools.error_check(context)
+        success, error_msg = my_scene.wirebomb_error_check()
 
         if success:
 
@@ -28,19 +29,31 @@ class WireframeOperator(bpy.types.Operator):
             context.window_manager.progress_update(1)
 
             # creates wireframe/clay scene object
-            scene = BlenderSceneW(w_var.original_scene, w_var.cb_backup, w_var.scene_name_1, 'CYCLES')
+            scene = BlenderSceneW(original_scene, w_var.cb_backup, w_var.scene_name_1, 'CYCLES')
+            scene.prepare_fast_setup()
 
-            scene.prepare_setup()
+            # sets all used objects to three sets: affected objects, other object and all used objects
+            # (need to do after I copy the scene to get the objects from the copied scene)
+            scene.add_objects_used()
 
-            # TODO: Give only_clay own function.
-            # runs wireframing
-            if w_var.wireframe_method == 'WIREFRAME_FREESTYLE':
-                w_tools.set_up_wireframe_freestyle(scene)
+            # updates progress bar to 25 %
+            bpy.context.window_manager.progress_update(25)
 
-            elif w_var.wireframe_method == 'WIREFRAME_MODIFIER':
-                w_tools.set_up_wireframe_modifier(scene)
+            if not w_var.cb_clay_only:
 
-            scene.prepare_setup(reverse=True)
+                # runs wireframing (w/ clay)
+                if w_var.wireframe_method == 'WIREFRAME_FREESTYLE':
+                    scene.set_up_wireframe_freestyle()
+
+                elif w_var.wireframe_method == 'WIREFRAME_MODIFIER':
+                    scene.set_up_wireframe_modifier()
+
+            else:
+
+                # only sets up clay
+                scene.set_up_clay_only()
+
+            scene.prepare_fast_setup(revert=True)
 
             # terminates the progress bar
             context.window_manager.progress_end()
@@ -63,7 +76,8 @@ class ConfigSaveOperator(bpy.types.Operator):
 
     def execute(self, context):
         if self.filename.lower().endswith('.ini'):
-            w_tools.config_save(context, self.filepath)
+            scene = BlenderSceneW(context.scene, False)
+            scene.wirebomb_config_save(self.filepath)
             self.report({'INFO'}, "{} saved successfully!".format(self.filename))
 
         else:
@@ -87,7 +101,8 @@ class ConfigLoadOperator(bpy.types.Operator):
     def execute(self, context):
         if self.filename.lower().endswith('.ini'):
             try:
-                w_tools.config_load(context, self.filepath)
+                scene = BlenderSceneW(context.scene, False)
+                scene.wirebomb_config_load(self.filepath)
                 self.report({'INFO'}, "{} loaded successfully!".format(self.filename))
 
             except KeyError as e:

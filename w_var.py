@@ -4,12 +4,10 @@ error_101 = False  # no mesh selected
 error_301 = False  # no name for new scene
 
 # if checkboxes are active
+cb_composited_active = None
 cb_clay_only_active = None
 cb_mat_wire_active = None
 cb_mat_clay_active = None
-
-# the scene to set up for a wireframe/clay render
-original_scene = None
 
 # render layer names
 rlname = ''

@@ -118,26 +118,25 @@ class BlenderScene:
         Returns:
             The layer containing least/most geometry.
         """
-        # TODO: Comment.
         scene = self.set_as_active()
         previous_layers = tuple(scene.layers)
+
+        # geometry and layer currently closest to meeting the wanted variable condition
         wanted_geo = None
         wanted_n = 0
 
         for n in range(1, 20):
+
+            # get layer n's stats
             layer = scene.layers[n]
             self.set_layers((layer,))
             stats = scene.statistics()
 
+            # get layer n's tris count from its stats
             geo_start = stats.index('Tris:') + 5
             geo_end = stats.index(' ', geo_start)
-
             geo_str = stats[geo_start:geo_end].split(',')
             geo_int = int(''.join(geo_str))
-
-            # TODO: This code runs more often than it should?
-            print('does this code run a lot?')
-            print(geo_int)
 
             if wanted == 'LEAST':
                 if wanted_geo is None or geo_int < wanted_geo:

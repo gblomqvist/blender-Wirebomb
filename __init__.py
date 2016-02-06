@@ -2,7 +2,6 @@
 
 import bpy
 from . import w_b_scene
-from . import w_tools
 from . import b_tools
 from . import w_operators
 from . import w_var
@@ -13,9 +12,6 @@ if 'bpy' in locals():
 
     if 'w_b_scene' in locals():
         importlib.reload(w_b_scene)
-
-    if 'w_tools' in locals():
-        importlib.reload(w_tools)
 
     if 'b_tools' in locals():
         importlib.reload(b_tools)
@@ -34,8 +30,8 @@ bl_info = {
     "author": "Gustaf Blomqvist",
     "version": (1, 0, 0),
     "blender": (2, 76, 0),
-    "location": "Render settings --> Wirebomb",
-    "description": "Setting up wireframe and clay renders has never been easier!",
+    "location": "Properties > Render settings > Wirebomb",
+    "description": "Setting up wireframe renders has never been easier!",
     "warning": "",
     "wiki_url": "",
     "tracker_url": "",
@@ -224,7 +220,7 @@ class WireframePanel(bpy.types.Panel):
 
     # draws the GUI
     def draw(self, context):
-        scene = w_b_scene.BlenderSceneW(context.scene, False)
+        scene_obj = w_b_scene.BlenderSceneW(context.scene, False)
         layout = self.layout
 
         # config file
@@ -261,14 +257,21 @@ class WireframePanel(bpy.types.Panel):
         # composited wires
         row = col.row()
 
-        if scene.get_scene().wirebomb.wireframe_method == 'WIREFRAME_FREESTYLE':
+        if scene_obj.get_scene().wirebomb.wireframe_method == 'WIREFRAME_FREESTYLE':
+            if scene_obj.get_scene().wirebomb.cb_clay_only is True:
+                row.active = False
+                w_var.cb_composited_active = False
+
+            else:
+                w_var.cb_composited_active = True
+
             row.prop(context.scene.wirebomb, property='cb_composited', text='Composited wires')
 
         # only selected
         col = split.column()
         row = col.row()
 
-        if w_var.error_101 and scene.get_scene().wirebomb.cb_only_selected and not scene.check_any_selected():
+        if w_var.error_101 and scene_obj.get_scene().wirebomb.cb_only_selected and not scene_obj.check_any_selected():
             row.alert = True
 
         else:
@@ -288,7 +291,7 @@ class WireframePanel(bpy.types.Panel):
         row = col.row()
         row.separator()
 
-        if scene.get_scene().wirebomb.cb_clay is not True:
+        if scene_obj.get_scene().wirebomb.cb_clay is not True:
             row.active = False
             w_var.cb_clay_only_active = False
 
@@ -302,29 +305,29 @@ class WireframePanel(bpy.types.Panel):
         layout.separator()
         row = layout.row()
 
-        if ((scene.get_scene().wirebomb.cb_mat_wire and
-             scene.get_scene().wirebomb.wireframe_method != 'WIREFRAME_FREESTYLE') or
-                (scene.get_scene().wirebomb.cb_clay_only and w_var.cb_clay_only_active)):
+        if ((scene_obj.get_scene().wirebomb.cb_mat_wire and
+             scene_obj.get_scene().wirebomb.wireframe_method != 'WIREFRAME_FREESTYLE') or
+                (scene_obj.get_scene().wirebomb.cb_clay_only and w_var.cb_clay_only_active)):
             row.active = False
 
         row.prop(context.scene.wirebomb, property='color_wire', text='Wireframe color')
 
-        if scene.get_scene().wirebomb.wireframe_method != 'WIREFRAME_FREESTYLE':
+        if scene_obj.get_scene().wirebomb.wireframe_method != 'WIREFRAME_FREESTYLE':
 
             # use material (wire)
             split = layout.split()
             col = split.column()
             row = col.row()
 
-            if (scene.get_scene().wirebomb.wireframe_method == 'WIREFRAME_FREESTYLE' or
-                    (scene.get_scene().wirebomb.cb_clay_only and w_var.cb_clay_only_active)):
+            if (scene_obj.get_scene().wirebomb.wireframe_method == 'WIREFRAME_FREESTYLE' or
+                    (scene_obj.get_scene().wirebomb.cb_clay_only and w_var.cb_clay_only_active)):
                 row.active = False
                 w_var.cb_mat_wire_active = False
 
             else:
                 w_var.cb_mat_wire_active = True
 
-            if scene.get_scene().wirebomb.cb_mat_wire and scene.get_scene().wirebomb.material_wire == '':
+            if scene_obj.get_scene().wirebomb.cb_mat_wire and scene_obj.get_scene().wirebomb.material_wire == '':
                 row.alert = True
 
             row.prop(context.scene.wirebomb, property='cb_mat_wire', text='Use material:')
@@ -333,8 +336,8 @@ class WireframePanel(bpy.types.Panel):
             col = split.column()
             row = col.row()
 
-            if (not scene.get_scene().wirebomb.cb_mat_wire or
-                    (scene.get_scene().wirebomb.cb_clay_only and scene.get_scene().wirebomb.cb_clay)):
+            if (not scene_obj.get_scene().wirebomb.cb_mat_wire or
+                    (scene_obj.get_scene().wirebomb.cb_clay_only and scene_obj.get_scene().wirebomb.cb_clay)):
                 row.active = False
 
             row.prop_search(context.scene.wirebomb, 'material_wire', bpy.data, 'materials', text='')
@@ -343,7 +346,7 @@ class WireframePanel(bpy.types.Panel):
         layout.separator()
         row = layout.row()
 
-        if scene.get_scene().wirebomb.cb_mat_clay or not scene.get_scene().wirebomb.cb_clay:
+        if scene_obj.get_scene().wirebomb.cb_mat_clay or not scene_obj.get_scene().wirebomb.cb_clay:
             row.active = False
 
         row.prop(context.scene.wirebomb, property='color_clay', text='Clay color')
@@ -353,14 +356,14 @@ class WireframePanel(bpy.types.Panel):
         col = split.column()
         row = col.row()
 
-        if not scene.get_scene().wirebomb.cb_clay:
+        if not scene_obj.get_scene().wirebomb.cb_clay:
             row.active = False
             w_var.cb_mat_clay_active = False
 
         else:
             w_var.cb_mat_clay_active = True
 
-        if scene.get_scene().wirebomb.cb_mat_clay and scene.get_scene().wirebomb.material_clay == '':
+        if scene_obj.get_scene().wirebomb.cb_mat_clay and scene_obj.get_scene().wirebomb.material_clay == '':
             row.alert = True
 
         row.prop(context.scene.wirebomb, property='cb_mat_clay', text='Use material:')
@@ -369,7 +372,7 @@ class WireframePanel(bpy.types.Panel):
         col = split.column()
         row = col.row()
 
-        if not (scene.get_scene().wirebomb.cb_mat_clay and w_var.cb_mat_clay_active):
+        if not (scene_obj.get_scene().wirebomb.cb_mat_clay and w_var.cb_mat_clay_active):
             row.active = False
 
         row.prop_search(context.scene.wirebomb, 'material_clay', bpy.data, 'materials', text='')
@@ -379,10 +382,10 @@ class WireframePanel(bpy.types.Panel):
         row = layout.row()
         row.label('Wireframe thickness:')
 
-        if scene.get_scene().wirebomb.wireframe_method == 'WIREFRAME_FREESTYLE':
+        if scene_obj.get_scene().wirebomb.wireframe_method == 'WIREFRAME_FREESTYLE':
             row.prop(context.scene.wirebomb, property='slider_wt_freestyle', text='Thickness')
 
-        elif scene.get_scene().wirebomb.wireframe_method == 'WIREFRAME_MODIFIER':
+        elif scene_obj.get_scene().wirebomb.wireframe_method == 'WIREFRAME_MODIFIER':
             row.prop(context.scene.wirebomb, property='slider_wt_modifier', text='Thickness')
 
         # 'affected layers' buttons
@@ -392,7 +395,7 @@ class WireframePanel(bpy.types.Panel):
         col.label(text='Affected layers:')
         row = col.row(align=True)
 
-        if scene.get_scene().wirebomb.cb_only_selected:
+        if scene_obj.get_scene().wirebomb.cb_only_selected:
             col.active = False
             row.active = False
 
@@ -412,7 +415,8 @@ class WireframePanel(bpy.types.Panel):
         layout.separator()
         row = layout.row()
 
-        if w_var.error_301 and len(scene.get_scene().wirebomb.scene_name_1) == 0 and scene.get_scene().wirebomb.cb_backup:
+        if (w_var.error_301 and len(scene_obj.get_scene().wirebomb.scene_name_1) == 0 and
+                scene_obj.get_scene().wirebomb.cb_backup):
             row.alert = True
 
         else:

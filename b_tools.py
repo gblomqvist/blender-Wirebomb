@@ -20,7 +20,7 @@ def layerlist_to_numberset(layer_list):
     Returns:
         A set consisting of integers representing the layers that are True in layer_list.
     """
-    # TODO: Doesnt't it belong to the BlenderScene class?
+    # TODO: Maybe put in the BlenderScene class as a @staticmethod?
     number_set = set()
 
     for i in range(0, 20):
