@@ -1,14 +1,14 @@
-# <pep8-80 compliant>
-
 import bpy
 from . import constants
 
 
 class BlenderScene:
-    """Contains useful functions and methods for modifying a scene.
+    """Contains useful functions for manipulating a blender scene.
 
     Attributes:
         name: The name of the scene.
+        original_scene: The scene object which was passed to initialize an instance of this class.
+        renderengine: The render engine used.
     """
 
     def __init__(self, scene, new_scene, new_name=None, renderer=None):
@@ -34,47 +34,64 @@ class BlenderScene:
 
             if renderer is not None:
                 scene.render.engine = renderer
-
+        
+        self.renderengine = self.get_scene().render.engine
+        
     def __str__(self):
-        return '<BlenderScene: {0}, original_scene: {1}>'.format(self.name, self.original_scene.name)
+        return '<BlenderScene: {0}, original_scene: {1}>'.format(self.get_name(), self.get_original_scene.name)
 
     @staticmethod
-    def copy_scene(scene, new_name, renderer='CYCLES'):
+    def copy_scene(scene, wanted_name, renderer=None):
         """Creates a full copy of the scene.
 
         Args:
             scene: A scene object which represents the scene to copy.
-            new_name: A string representing the new scene's name.
+            wanted_name: A string representing the new scene's wanted name.
             renderer: A string representing the new scene's render engine, e.g. 'CYCLES'.
 
         Returns:
             A string that is the new scene's name.
         """
-        original_new_name = new_name
+        
+        # need to collect scene names before I copy the scene
+        scene_names = [sc.name for sc in bpy.data.scenes]
+
         bpy.context.screen.scene = scene
         bpy.ops.scene.new(type='FULL_COPY')
 
         # this is for better handling of duplicate scene names when creating a new scene
         n = 1
-        while True:
-            if new_name not in [scene.name for scene in bpy.data.scenes]:
-                bpy.context.screen.scene.name = new_name
+        name = wanted_name
+
+        while True: 
+            if name not in scene_names:
+                bpy.context.screen.scene.name = name
                 break
+
             else:
-                new_name = original_new_name + '_' + str(n).zfill(3)
+                name = wanted_name + '.' + str(n).zfill(3)
                 n += 1
+        
+        if renderer is not None:
+            bpy.data.scenes[name].render.engine = renderer
 
-        bpy.data.scenes[new_name].render.engine = renderer
-
-        return new_name
-
+        return name
+    
+    def get_name(self):
+        """Returns the name of the scene."""
+        return self.name
+        
     def get_scene(self):
-        """Returns the blender scene object linked to this instance."""
+        """Returns the scene object linked to this instance."""
         return bpy.data.scenes[self.name]
 
     def get_original_scene(self):
-        """Returns the original blender scene object of this instance."""
+        """Returns the scene object which was passed to initialize this instance."""
         return self.original_scene
+    
+    def get_renderengine(self):
+        """Returns the scene's render engine."""
+        return self.renderengine
 
     def set_as_active(self):
         """Sets the scene as active.
@@ -82,9 +99,10 @@ class BlenderScene:
         Returns:
             The scene object.
         """
-        bpy.context.screen.scene = self.get_scene()
+        scene = self.get_scene()
+        bpy.context.screen.scene = scene
 
-        return self.get_scene()
+        return scene
 
     def set_layers(self, layers, deactivate_other=True):
         """Activates layer(s) passed in and deactivates other layer(s) depending on deactive_other variable.

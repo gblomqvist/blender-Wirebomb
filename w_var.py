@@ -1,5 +1,3 @@
-# <pep8-80 compliant>
-
 error_101 = False  # no mesh selected
 error_301 = False  # no name for new scene
 
@@ -17,6 +15,7 @@ rlname_other = ''
 objects_affected = set()
 objects_other = set()
 objects_all_used = set()
+is_any_affected = False
 
 # from interface:
 # wireframe type

@@ -1,6 +1,3 @@
-# <pep8-80 compliant>
-
-
 def layerlist_to_numberset(layer_list):
     """Converts a layer list to a number set.
 
