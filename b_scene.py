@@ -148,22 +148,16 @@ class BlenderScene:
             # get layer n's stats
             layer = scene.layers[n]
             self.set_layers((layer,))
-            stats = scene.statistics()
-
-            # get layer n's tris count from its stats
-            geo_start = stats.index('Tris:') + 5
-            geo_end = stats.index(' ', geo_start)
-            geo_str = stats[geo_start:geo_end].split(',')
-            geo_int = int(''.join(geo_str))
+            tris_count = int(scene.statistics().split('|')[3].split(':')[1])
 
             if wanted == 'LEAST':
-                if wanted_geo is None or geo_int < wanted_geo:
-                    wanted_geo = geo_int
+                if wanted_geo is None or tris_count < wanted_geo:
+                    wanted_geo = tris_count
                     wanted_n = n
 
             elif wanted == 'MOST':
-                if wanted_geo is None or geo_int > wanted_geo:
-                    wanted_geo = geo_int
+                if wanted_geo is None or tris_count > wanted_geo:
+                    wanted_geo = tris_count
                     wanted_n = n
 
             else:
