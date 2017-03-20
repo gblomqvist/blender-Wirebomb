@@ -460,5 +460,4 @@ class WireframePanel(bpy.types.Panel):
         # developer info
         layout.separator()
         info = layout.row()
-        info.label(text='Developed by Gustaf Blomqvist | v1.1.0')
-
+        info.label(text='Developed by Gustaf Blomqvist | v1.1.1')
