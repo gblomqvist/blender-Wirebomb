@@ -26,13 +26,13 @@ if 'bpy' in locals():
 bl_info = {
     "name": "Wirebomb",
     "author": "Gustaf Blomqvist",
-    "version": (1, 1, 0),
-    "blender": (2, 76, 0),
+    "version": (1, 1, 1),
+    "blender": (2, 78, 0),
     "location": "Properties > Render settings > Wirebomb",
     "description": "Setting up wireframe renders has never been easier!",
     "warning": "",
-    "wiki_url": "https://cgcookiemarkets.com/all-products/wirebomb-fast-easy-wireframing-in-cycles/?view=docs",
-    "tracker_url": "",
+    "wiki_url": "https://blendermarket.com/products/wirebomb",
+    "tracker_url": "https://blendermarket.com/products/wirebomb",
     "category": "Render"
 }
 
