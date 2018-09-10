@@ -26,8 +26,8 @@ if 'bpy' in locals():
 bl_info = {
     "name": "Wirebomb",
     "author": "Gustaf Blomqvist",
-    "version": (1, 1, 1),
-    "blender": (2, 78, 0),
+    "version": (1, 1, 3),
+    "blender": (2, 79, 0),
     "location": "Properties > Render settings > Wirebomb",
     "description": "Setting up wireframe renders has never been easier!",
     "warning": "",
@@ -460,4 +460,4 @@ class WireframePanel(bpy.types.Panel):
         # developer info
         layout.separator()
         info = layout.row()
-        info.label(text='Developed by Gustaf Blomqvist | v1.1.1')
+        info.label(text='Developed by Gustaf Blomqvist | v1.1.3')
