@@ -119,7 +119,9 @@ class BlenderScene:
             new_layers = [False, ]*20
 
             for n in layers:
-                new_layers[n-1] = True
+                new_layers[n] = True
+
+            scene.layers = new_layers
 
         else:
             for n in layers:
