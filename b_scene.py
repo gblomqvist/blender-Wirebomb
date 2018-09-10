@@ -167,6 +167,26 @@ class BlenderScene:
 
         return wanted_n
 
+    def get_layers_vert_counts(self):
+        """Returns a list of integers where element i represents the number of vertices on layer i.
+
+        Returns:
+            A list of integers where element i represents the number of vertices on layer i.
+        """
+        scene = self.set_as_active()
+
+        layers_vert_counts = [0, ] * 20
+
+        for obj in scene.objects:
+            if obj.type != 'MESH':
+                continue
+
+            for n, layer in enumerate(obj.layers):
+                if layer:
+                    layers_vert_counts[n] += len(obj.data.vertices)
+
+        return layers_vert_counts
+
     def set_active_object(self, obj_types=constants.obj_types):
         """Sets the active object to be one among the selected objects.
 
