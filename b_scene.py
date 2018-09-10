@@ -125,48 +125,6 @@ class BlenderScene:
             for n in layers:
                 scene.layers[n] = True
 
-    def find_layer_by_geometry(self, wanted):
-        """Finds and returns the layer containing least/most geometry depending on wanted variable.
-
-        If multiple layers are correct and contain the same amount of geometry, the first one found will be returned.
-
-        Args:
-            wanted: A string, either 'LEAST' or 'MOST' depending on if you want the layer with the least/most geometry.
-
-        Returns:
-            The layer containing least/most geometry.
-        """
-        scene = self.set_as_active()
-        previous_layers = tuple(scene.layers)
-
-        # geometry and layer currently closest to meeting the wanted variable condition
-        wanted_geo = None
-        wanted_n = 0
-
-        for n in range(1, 20):
-
-            # get layer n's stats
-            layer = scene.layers[n]
-            self.set_layers((layer,))
-            tris_count = int(scene.statistics().split('|')[3].split(':')[1])
-
-            if wanted == 'LEAST':
-                if wanted_geo is None or tris_count < wanted_geo:
-                    wanted_geo = tris_count
-                    wanted_n = n
-
-            elif wanted == 'MOST':
-                if wanted_geo is None or tris_count > wanted_geo:
-                    wanted_geo = tris_count
-                    wanted_n = n
-
-            else:
-                raise ValueError("No such wanted as {}".format(wanted))
-
-        scene.layers = previous_layers
-
-        return wanted_n
-
     def get_layers_vert_counts(self):
         """Returns a list of integers where element i represents the number of vertices on layer i.
 

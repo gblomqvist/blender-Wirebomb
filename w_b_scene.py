@@ -59,7 +59,7 @@ class BlenderSceneW(BlenderScene):
         if not revert:
             scene.render.use_simplify = True
             scene.render.simplify_subdivision = 0
-            smallest_layer = self.find_layer_by_geometry('LEAST')
+            smallest_layer, _ = min(enumerate(self.get_layers_vert_counts()), key=lambda p: p[1])
             self.set_layers((smallest_layer,))
 
         else:
