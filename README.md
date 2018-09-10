@@ -1,1 +1,1 @@
-"Either I will find a way, or I will make one." - Philip Sidney
+Check it out on [Blender Market](https://blendermarket.com/products/wirebomb "Blender Market product page").
