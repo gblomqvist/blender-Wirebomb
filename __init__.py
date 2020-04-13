@@ -22,7 +22,7 @@ bl_info = {
     "version": (2, 0, 0),
     "blender": (2, 82, 0),
     "location": "Properties > Render Properties > Wirebomb",
-    "warning": "Beta",
+    "warning": "",
     "wiki_url": "https://blendermarket.com/products/wirebomb/docs",
     "tracker_url": "https://github.com/gblomqvist/blender-Wirebomb/issues",
     "support": "COMMUNITY",
