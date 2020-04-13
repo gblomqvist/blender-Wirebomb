@@ -42,8 +42,8 @@ def gen_material_props(default_color):
     return MaterialData
 
 
-MaterialWireframeData = gen_material_props((0.009, 0.787, 0.787, 0.9))
-MaterialBaseData = gen_material_props((0.209, 0.009, 0.787, 1.0))
+MaterialWireframeData = gen_material_props((0.214, 1, 1, 1))
+MaterialBaseData = gen_material_props((0.902, 0.133, 1, 1))
 
 
 class CollectionItem(bpy.types.PropertyGroup):
