@@ -271,7 +271,7 @@ class Wirebomb:
         new_world.light_settings.use_ambient_occlusion = True
         new_world.light_settings.ao_factor = 0.3
         new_world.use_nodes = True
-        new_world.node_tree.nodes[1].inputs[0].default_value = (1, 1, 1, 1)
+        new_world.node_tree.nodes["Background"].inputs[0].default_value = (1, 1, 1, 1)
 
         for node in new_world.node_tree.nodes:
             node.select = False
